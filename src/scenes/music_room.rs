@@ -68,7 +68,7 @@ impl Scene for MusicRoom {
         d: &mut raylib::prelude::RaylibTextureMode<'_, raylib::prelude::RaylibDrawHandle<'_>>,
         state: &crate::state::State,
     ) {
-        d.draw_texture(&state.assets.main_menu, 0, 0, Color::WHITE);
+        let screen = (d.get_screen_width() as f32, d.get_screen_height() as f32);
         d.draw_texture(&state.assets.main_menu, 0, 0, Color::WHITE);
         d.draw_text_pro(
             &state.assets.font_bold,
@@ -80,10 +80,11 @@ impl Scene for MusicRoom {
             0.,
             Color::WHITE,
         );
+        let width = d.measure_text("UnknownRori © 2024", 16) as f32;
         d.draw_text_pro(
             &state.assets.font_bold,
             "UnknownRori Copyright 2024",
-            Vector2::new(80., 480. - 24.),
+            Vector2::new(screen.0 / 2. - width - 100., 480. - 24.),
             Vector2::new(0., 0.),
             0.,
             17.,

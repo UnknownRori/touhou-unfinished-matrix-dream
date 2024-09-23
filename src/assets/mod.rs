@@ -65,7 +65,7 @@ impl<'a> AudioAssets<'a> {
         bgm.push(BGM::new(
             "Strawberry Crisis",
             "Zun - Remixed by UnknownRori",
-            "We are doomed",
+            "Yumemi's We are doomed",
             "./assets/bgm/strawberry-crisis.ogg",
             audio,
         ));
