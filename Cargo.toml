@@ -1,0 +1,9 @@
+[package]
+name = "touhou-unfinished-matrix-dream"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hecs = "0.10.5"
+num-complex = "0.4.6"
+raylib = "5.0.2"
