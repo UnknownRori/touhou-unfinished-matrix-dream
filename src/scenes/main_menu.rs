@@ -1,6 +1,6 @@
 use crate::{controls::Action, ui::basic_choice::BasicChoice};
 
-use super::{music_room::MusicRoom, Scene};
+use super::{character_selection::CharacterSelection, music_room::MusicRoom, Scene};
 use raylib::prelude::*;
 
 #[derive(Debug)]
@@ -35,7 +35,6 @@ impl Scene for MainMenu {
 
     fn clean_up(&mut self, state: &mut crate::state::State) {
         state.audio.bgm[0].stop_stream();
-        println!("Clean");
     }
 
     fn draw(
@@ -44,10 +43,10 @@ impl Scene for MainMenu {
         state: &crate::state::State,
     ) {
         let screen = (d.get_screen_width() as f32, d.get_screen_height() as f32);
-        d.draw_texture(&state.assets.main_menu, 0, 0, Color::WHITE);
+        d.draw_texture(&state.assets.get("main_menu"), 0, 0, Color::WHITE);
         let width = d.measure_text("Touhou Project", 42) as f32;
         d.draw_text_pro(
-            &state.assets.font_bold,
+            &state.assets.font,
             "Touhou Project",
             Vector2::new(screen.0 / 2. - width + 50., 50.),
             Vector2::new(0., 0.),
@@ -59,7 +58,7 @@ impl Scene for MainMenu {
 
         let width = d.measure_text("Touhou Project", 28) as f32;
         d.draw_text_pro(
-            &state.assets.font_bold,
+            &state.assets.font,
             "Unfinished Matrix Dream",
             Vector2::new(screen.0 / 2. - width - 80., 120.),
             Vector2::new(0., 0.),
@@ -78,7 +77,7 @@ impl Scene for MainMenu {
 
         let width = d.measure_text("UnknownRori © 2024", 16) as f32;
         d.draw_text_pro(
-            &state.assets.font_bold,
+            &state.assets.font,
             "UnknownRori Copyright 2024",
             Vector2::new(screen.0 / 2. - width - 100., 480. - 24.),
             Vector2::new(0., 0.),
@@ -110,9 +109,9 @@ impl Scene for MainMenu {
                 state.audio.select_sfx.play(state.sfx_volume);
             }
             match self.current_index {
-                4 => {
-                    state.change_scene(Box::new(MusicRoom::new(&state)));
-                }
+                0 => state.change_scene(Box::new(CharacterSelection::new())),
+                4 => state.change_scene(Box::new(MusicRoom::new(&state))),
+
                 7 => state.should_quit = true,
                 _ => {}
             }

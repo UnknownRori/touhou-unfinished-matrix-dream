@@ -1,5 +1,6 @@
 use crate::difficulty::Difficulty;
 
+#[derive(Debug)]
 pub struct ScoreData {
     pub graze: i32,
     pub score: u64,

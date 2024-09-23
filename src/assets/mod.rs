@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bgm::BGM;
 use raylib::prelude::*;
 use sfx::Sfx;
@@ -6,12 +8,8 @@ pub mod bgm;
 pub mod sfx;
 
 pub struct Assets {
-    // INFO : Texture
-    pub main_menu: Texture2D,
-
-    // INFO : Font
+    textures: HashMap<&'static str, Texture2D>,
     pub font: Font,
-    pub font_bold: Font,
 }
 
 pub struct AudioAssets<'a> {
@@ -134,22 +132,60 @@ impl<'a> AudioAssets<'a> {
 
 impl Assets {
     pub fn new(rl: &mut RaylibHandle, thread: &RaylibThread) -> Self {
+        let mut textures = HashMap::new();
+        // INFO : Texture
         let main_menu = rl
             .load_texture(thread, "./assets/ui/main-menu.png")
             .expect("[-] File not found!");
+        textures.insert("main_menu", main_menu);
+        let stg1 = rl
+            .load_texture(thread, "./assets/backgrounds/stage1/bg.png")
+            .expect("[-] File not found!");
+        textures.insert("stg1", stg1);
+
+        // INFO : Characters
+        let dummy_char = rl
+            .load_texture(thread, "./assets/characters/filler.png")
+            .expect("[-] File not found!");
+        textures.insert("dummy_char", dummy_char);
+        let reimu_char = rl
+            .load_texture(thread, "./assets/characters/reimu/reimu.png")
+            .expect("[-] File not found!");
+        textures.insert("reimu_char", reimu_char);
+        let miko_char = rl
+            .load_texture(thread, "./assets/characters/miko/miko.png")
+            .expect("[-] File not found!");
+        textures.insert("miko_char", miko_char);
+
+        // INFO : Sprite
+        let commons_sprite = rl
+            .load_texture(thread, "./assets/sprites/commons.png")
+            .expect("[-] File not found!");
+        textures.insert("commons_sprite", commons_sprite);
+
+        let reimu_sprite = rl
+            .load_texture(thread, "./assets/sprites/reimu/reimu.png")
+            .expect("[-] File not found!");
+        textures.insert("reimu_sprite", reimu_sprite);
+
+        let miko_sprite = rl
+            .load_texture(thread, "./assets/sprites/miko/miko.png")
+            .expect("[-] File not found!");
+        textures.insert("miko_sprite", miko_sprite);
+        let fairy_sprite = rl
+            .load_texture(thread, "./assets/sprites/fairy/fairy.png")
+            .expect("[-] File not found!");
+        textures.insert("fairy_sprite", fairy_sprite);
 
         // INFO : Font
         let font = rl
-            .load_font(thread, "./assets/fonts/pc-9800.ttf")
-            .expect("[-] File not found!");
-        let font_bold = rl
             .load_font(thread, "./assets/fonts/pc-9800-bold.ttf")
             .expect("[-] File not found!");
 
-        Self {
-            main_menu,
-            font,
-            font_bold,
-        }
+        Self { textures, font }
+    }
+
+    pub fn get(&self, name: &str) -> &Texture2D {
+        self.textures.get(name).unwrap()
     }
 }

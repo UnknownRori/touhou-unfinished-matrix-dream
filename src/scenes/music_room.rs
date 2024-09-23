@@ -69,11 +69,11 @@ impl Scene for MusicRoom {
         state: &crate::state::State,
     ) {
         let screen = (d.get_screen_width() as f32, d.get_screen_height() as f32);
-        d.draw_texture(&state.assets.main_menu, 0, 0, Color::WHITE);
+        d.draw_texture(&state.assets.get("main_menu"), 0, 0, Color::WHITE);
         d.draw_text_pro(
-            &state.assets.font_bold,
+            &state.assets.font,
             "Music Room",
-            Vector2::new(200., 50.),
+            Vector2::new(220., 20.),
             Vector2::new(0., 0.),
             0.,
             42.,
@@ -82,7 +82,7 @@ impl Scene for MusicRoom {
         );
         let width = d.measure_text("UnknownRori © 2024", 16) as f32;
         d.draw_text_pro(
-            &state.assets.font_bold,
+            &state.assets.font,
             "UnknownRori Copyright 2024",
             Vector2::new(screen.0 / 2. - width - 100., 480. - 24.),
             Vector2::new(0., 0.),
@@ -92,7 +92,7 @@ impl Scene for MusicRoom {
             Color::GRAY,
         );
 
-        let position = Vector2::new(40., 100.);
+        let position = Vector2::new(40., 65.);
         let font_size = 21.;
         for (i, val) in self.choices.iter().enumerate() {
             let position = Vector2::new(position.x, position.y + font_size * i as f32);
@@ -107,7 +107,17 @@ impl Scene for MusicRoom {
         }
 
         d.draw_text_pro(
-            &state.assets.font_bold,
+            &state.assets.font,
+            &state.audio.bgm[self.current_music].author,
+            Vector2::new(40., 350.),
+            Vector2::new(0., 0.),
+            0.,
+            17.,
+            0.,
+            Color::WHITE,
+        );
+        d.draw_text_pro(
+            &state.assets.font,
             &state.audio.bgm[self.current_music].description,
             Vector2::new(40., 380.),
             Vector2::new(0., 0.),

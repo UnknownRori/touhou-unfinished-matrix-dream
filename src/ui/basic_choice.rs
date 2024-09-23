@@ -26,7 +26,7 @@ impl BasicChoice {
     ) {
         if active {
             d.draw_text_ex(
-                &state.assets.font_bold,
+                &state.assets.font,
                 ">",
                 Vector2::new(position.x - 20., position.y),
                 font_size,
@@ -41,7 +41,7 @@ impl BasicChoice {
                 Color::new(88, 88, 88, 128)
             };
             d.draw_text_ex(
-                &state.assets.font_bold,
+                &state.assets.font,
                 &self.name,
                 position,
                 font_size,
@@ -52,7 +52,7 @@ impl BasicChoice {
         }
         let color = if active { Color::WHITE } else { Color::GRAY };
         d.draw_text_ex(
-            &state.assets.font_bold,
+            &state.assets.font,
             &self.name,
             position,
             font_size,

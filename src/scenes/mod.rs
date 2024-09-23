@@ -4,6 +4,7 @@ use raylib::prelude::*;
 
 use crate::state::State;
 
+pub mod character_selection;
 pub mod main_menu;
 pub mod music_room;
 

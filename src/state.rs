@@ -1,7 +1,4 @@
-use raylib::{
-    prelude::{RaylibDrawHandle, RaylibTextureMode},
-    RaylibHandle, RaylibThread,
-};
+use raylib::{prelude::*, RaylibHandle, RaylibThread};
 
 use crate::{
     assets::{Assets, AudioAssets},
@@ -76,6 +73,7 @@ impl<'a> State<'a> {
     }
 
     pub fn draw(&mut self, d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>) {
+        d.clear_background(Color::BLACK);
         if self.current_scene.is_some() {
             let scene = self.current_scene.take().unwrap();
             scene.draw(d, self);
