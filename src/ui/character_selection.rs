@@ -5,11 +5,11 @@ use crate::state::State;
 // Description
 #[derive(Debug)]
 pub struct Character {
-    name: String,
-    type_a: ShotType,
-    type_b: ShotType,
-    disabled: bool,
-    char: String,
+    pub name: String,
+    pub type_a: ShotType,
+    pub type_b: ShotType,
+    pub disabled: bool,
+    pub char: String,
 }
 
 #[derive(Debug)]
@@ -26,6 +26,73 @@ impl ShotType {
             spell_card: spell_card.to_owned(),
             disabled,
         }
+    }
+}
+
+impl ShotType {
+    pub fn draw(
+        &self,
+        d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>,
+        active: bool,
+        position: Vector2,
+        font_size: f32,
+        state: &State,
+    ) {
+        if active {
+            d.draw_text_ex(
+                &state.assets.font,
+                ">",
+                Vector2::new(position.x - 20., position.y),
+                font_size,
+                0.,
+                Color::WHITE,
+            );
+        }
+
+        if self.disabled {
+            let color = if active {
+                Color::new(88, 88, 88, 255)
+            } else {
+                Color::new(88, 88, 88, 128)
+            };
+            d.draw_text_ex(
+                &state.assets.font,
+                &format!("Bullet Type : {}", &self.bullet_type),
+                position,
+                font_size,
+                0.,
+                color,
+            );
+
+            d.draw_text_ex(
+                &state.assets.font,
+                &format!("Spells : {}", &self.spell_card),
+                Vector2::new(position.x, position.y + font_size + 4.),
+                font_size,
+                0.,
+                color,
+            );
+            return;
+        }
+
+        let color = if active { Color::WHITE } else { Color::GRAY };
+        d.draw_text_ex(
+            &state.assets.font,
+            &format!("Bullet Type : {}", &self.bullet_type),
+            position,
+            font_size,
+            0.,
+            color,
+        );
+
+        d.draw_text_ex(
+            &state.assets.font,
+            &format!("Spells : {}", &self.spell_card),
+            Vector2::new(position.x, position.y + font_size + 4.),
+            font_size,
+            0.,
+            color,
+        );
     }
 }
 

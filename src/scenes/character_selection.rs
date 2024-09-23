@@ -11,7 +11,6 @@ use super::{main_menu::MainMenu, Scene};
 enum CurrentSelection {
     Difficulty,
     Character,
-    ShootType,
 }
 
 #[derive(Debug)]
@@ -46,8 +45,8 @@ impl CharacterSelection {
                 ),
                 Character::new(
                     "Unknown",
-                    ShotType::new("Unknown", "Unknown", false),
-                    ShotType::new("Unknown", "Unknown", false),
+                    ShotType::new("Unknown", "Unknown", true),
+                    ShotType::new("Unknown", "Unknown", true),
                     "dummy_char",
                     true,
                 ),
@@ -73,7 +72,41 @@ impl Scene for CharacterSelection {
             match self.current_menu {
                 CurrentSelection::Difficulty => state.change_scene(Box::new(MainMenu::new())),
                 CurrentSelection::Character => self.current_menu = CurrentSelection::Difficulty,
-                CurrentSelection::ShootType => self.current_menu = CurrentSelection::ShootType,
+            }
+        }
+
+        if state.controls.is_pressed(Action::Accept, d) {
+            match self.current_menu {
+                CurrentSelection::Difficulty => {
+                    if self.difficulty_selected == 1 {
+                        self.current_menu = CurrentSelection::Character;
+                    }
+                }
+                CurrentSelection::Character => todo!(),
+            }
+        }
+
+        if state.controls.is_pressed(Action::Left, d) {
+            match self.current_menu {
+                CurrentSelection::Difficulty => {}
+                CurrentSelection::Character => {
+                    if self.character_select[0] == 0 {
+                        self.character_select[0] = self.character_select.len() as usize;
+                    }
+                    self.character_select[0] -= 1;
+                    state.audio.select_sfx.play(state.sfx_volume);
+                }
+            }
+        }
+
+        if state.controls.is_pressed(Action::Right, d) {
+            match self.current_menu {
+                CurrentSelection::Difficulty => {}
+                CurrentSelection::Character => {
+                    self.character_select[0] =
+                        (self.character_select[0] + 1) % self.character_select.len() as usize;
+                    state.audio.select_sfx.play(state.sfx_volume);
+                }
             }
         }
 
@@ -86,8 +119,13 @@ impl Scene for CharacterSelection {
                     self.difficulty_selected -= 1;
                     state.audio.select_sfx.play(state.sfx_volume);
                 }
-                CurrentSelection::Character => todo!(),
-                CurrentSelection::ShootType => todo!(),
+                CurrentSelection::Character => {
+                    if self.character_select[1] == 0 {
+                        self.character_select[1] = 2;
+                    }
+                    self.character_select[1] -= 1;
+                    state.audio.select_sfx.play(state.sfx_volume);
+                }
             }
         }
 
@@ -98,8 +136,10 @@ impl Scene for CharacterSelection {
                         (self.difficulty_selected + 1) % self.difficulty_choices.len() as usize;
                     state.audio.select_sfx.play(state.sfx_volume);
                 }
-                CurrentSelection::Character => todo!(),
-                CurrentSelection::ShootType => todo!(),
+                CurrentSelection::Character => {
+                    self.character_select[1] = (self.character_select[1] + 1) % 2;
+                    state.audio.select_sfx.play(state.sfx_volume);
+                }
             }
         }
     }
@@ -120,8 +160,53 @@ impl Scene for CharacterSelection {
                     val.draw(d, self.difficulty_selected == i, position, font_size, state);
                 }
             }
-            CurrentSelection::Character => {}
-            CurrentSelection::ShootType => {}
+            CurrentSelection::Character => {
+                for (i, val) in self.character_choices.iter().enumerate() {
+                    let color = if !val.disabled {
+                        Color::WHITE
+                    } else {
+                        Color::GRAY
+                    };
+                    let position = Vector2::new(300., 100.);
+                    if i == self.character_select[0] {
+                        d.draw_text_pro(
+                            &state.assets.font,
+                            &val.name,
+                            Vector2::new(30., 100.),
+                            Vector2::new(0., 0.),
+                            0.,
+                            28.,
+                            0.,
+                            color,
+                        );
+                        d.draw_texture_ex(
+                            state.assets.get(&val.char),
+                            position,
+                            0.,
+                            1.5,
+                            Color::WHITE,
+                        );
+                    }
+
+                    if i == self.character_select[0] {
+                        val.type_a.draw(
+                            d,
+                            0 == self.character_select[1],
+                            Vector2::new(30., 200.),
+                            16.,
+                            state,
+                        );
+
+                        val.type_b.draw(
+                            d,
+                            1 == self.character_select[1],
+                            Vector2::new(30., 260.),
+                            16.,
+                            state,
+                        );
+                    }
+                }
+            }
         }
     }
 }
