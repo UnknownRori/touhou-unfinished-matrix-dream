@@ -18,7 +18,7 @@ impl OptionChoice {
 
     pub fn draw(
         &self,
-        d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>,
+        d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         active: bool,
         selected: bool,
         position: Vector2,

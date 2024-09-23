@@ -39,7 +39,7 @@ impl Scene for MainMenu {
 
     fn draw(
         &self,
-        d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>,
+        d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         state: &crate::state::State,
     ) {
         let screen = (d.get_screen_width() as f32, d.get_screen_height() as f32);
@@ -88,7 +88,7 @@ impl Scene for MainMenu {
         );
     }
 
-    fn update(&mut self, d: &RaylibDrawHandle, state: &mut crate::state::State) {
+    fn update(&mut self, d: &mut RaylibDrawHandle, state: &mut crate::state::State) {
         state.audio.bgm[0].update_stream();
 
         if state.controls.is_pressed(Action::Down, d) {

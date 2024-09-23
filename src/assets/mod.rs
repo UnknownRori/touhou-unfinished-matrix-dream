@@ -132,60 +132,56 @@ impl<'a> AudioAssets<'a> {
 
 impl Assets {
     pub fn new(rl: &mut RaylibHandle, thread: &RaylibThread) -> Self {
-        let mut textures = HashMap::new();
-        // INFO : Texture
-        let main_menu = rl
-            .load_texture(thread, "./assets/ui/main-menu.png")
-            .expect("[-] File not found!");
-        textures.insert("main_menu", main_menu);
-        let stg1 = rl
-            .load_texture(thread, "./assets/backgrounds/stage1/bg.png")
-            .expect("[-] File not found!");
-        textures.insert("stg1", stg1);
-
-        // INFO : Characters
-        let dummy_char = rl
-            .load_texture(thread, "./assets/characters/filler.png")
-            .expect("[-] File not found!");
-        textures.insert("dummy_char", dummy_char);
-        let reimu_char = rl
-            .load_texture(thread, "./assets/characters/reimu/reimu.png")
-            .expect("[-] File not found!");
-        textures.insert("reimu_char", reimu_char);
-        let miko_char = rl
-            .load_texture(thread, "./assets/characters/miko/miko.png")
-            .expect("[-] File not found!");
-        textures.insert("miko_char", miko_char);
-
-        // INFO : Sprite
-        let commons_sprite = rl
-            .load_texture(thread, "./assets/sprites/commons.png")
-            .expect("[-] File not found!");
-        textures.insert("commons_sprite", commons_sprite);
-
-        let reimu_sprite = rl
-            .load_texture(thread, "./assets/sprites/reimu/reimu.png")
-            .expect("[-] File not found!");
-        textures.insert("reimu_sprite", reimu_sprite);
-
-        let miko_sprite = rl
-            .load_texture(thread, "./assets/sprites/miko/miko.png")
-            .expect("[-] File not found!");
-        textures.insert("miko_sprite", miko_sprite);
-        let fairy_sprite = rl
-            .load_texture(thread, "./assets/sprites/fairy/fairy.png")
-            .expect("[-] File not found!");
-        textures.insert("fairy_sprite", fairy_sprite);
-
-        // INFO : Font
+        let textures = HashMap::new();
         let font = rl
             .load_font(thread, "./assets/fonts/pc-9800-bold.ttf")
             .expect("[-] File not found!");
+        let mut assets = Self { textures, font };
 
-        Self { textures, font }
+        assets.load_textures(rl, thread, "./assets/ui/main-menu.png", "main_menu");
+        assets.load_textures(rl, thread, "./assets/ui/stage-view.png", "stage_view");
+        assets.load_textures(rl, thread, "./assets/backgrounds/stage1/bg.png", "stg1");
+
+        assets.load_textures(rl, thread, "./assets/characters/filler.png", "dummy_char");
+        assets.load_textures(
+            rl,
+            thread,
+            "./assets/characters/reimu/reimu.png",
+            "reimu_char",
+        );
+        assets.load_textures(rl, thread, "./assets/characters/miko/miko.png", "miko_char");
+
+        assets.load_textures(rl, thread, "./assets/sprites/commons.png", "commons_sprite");
+        assets.load_textures(
+            rl,
+            thread,
+            "./assets/sprites/reimu/reimu.png",
+            "reimu_sprite",
+        );
+        assets.load_textures(rl, thread, "./assets/sprites/miko/miko.png", "miko_sprite");
+        assets.load_textures(
+            rl,
+            thread,
+            "./assets/sprites/fairy/fairy.png",
+            "fairy_sprite",
+        );
+
+        assets
     }
 
     pub fn get(&self, name: &str) -> &Texture2D {
         self.textures.get(name).unwrap()
+    }
+
+    pub fn load_textures(
+        &mut self,
+        rl: &mut RaylibHandle,
+        thread: &RaylibThread,
+        path: &str,
+        name: &'static str,
+    ) {
+        let tex = rl.load_texture(thread, path).expect("[-] File not found!");
+        tex.set_texture_filter(thread, TextureFilter::TEXTURE_FILTER_POINT);
+        self.textures.insert(name, tex);
     }
 }

@@ -5,7 +5,7 @@ use crate::{
 };
 use raylib::prelude::*;
 
-use super::{main_menu::MainMenu, Scene};
+use super::{main_menu::MainMenu, stage_view::StageView, Scene};
 
 #[derive(Debug)]
 enum CurrentSelection {
@@ -64,7 +64,7 @@ impl Scene for CharacterSelection {
         //
     }
 
-    fn update(&mut self, d: &RaylibDrawHandle, state: &mut State) {
+    fn update(&mut self, d: &mut RaylibDrawHandle, state: &mut State) {
         state.audio.bgm[0].update_stream();
 
         if state.controls.is_pressed(Action::Escape, d) {
@@ -82,7 +82,9 @@ impl Scene for CharacterSelection {
                         self.current_menu = CurrentSelection::Character;
                     }
                 }
-                CurrentSelection::Character => todo!(),
+                CurrentSelection::Character => {
+                    state.change_scene(Box::new(StageView::new("stg1".to_owned())));
+                }
             }
         }
 
@@ -144,8 +146,11 @@ impl Scene for CharacterSelection {
         }
     }
 
-    fn draw(&self, d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>, state: &State) {
-        let screen = (d.get_screen_width() as f32, d.get_screen_height() as f32);
+    fn draw(
+        &self,
+        d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
+        state: &State,
+    ) {
         d.draw_texture(&state.assets.get("main_menu"), 0, 0, Color::WHITE);
 
         match self.current_menu {

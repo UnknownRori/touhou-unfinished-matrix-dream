@@ -37,7 +37,11 @@ impl Scene for MusicRoom {
         state.audio.bgm[self.current_music].stop_stream();
     }
 
-    fn update(&mut self, d: &raylib::prelude::RaylibDrawHandle, state: &mut crate::state::State) {
+    fn update(
+        &mut self,
+        d: &mut raylib::prelude::RaylibDrawHandle,
+        state: &mut crate::state::State,
+    ) {
         state.audio.bgm[self.current_music].update_stream();
 
         if state.controls.is_pressed(Action::Escape, d) {
@@ -65,7 +69,7 @@ impl Scene for MusicRoom {
 
     fn draw(
         &self,
-        d: &mut raylib::prelude::RaylibTextureMode<'_, raylib::prelude::RaylibDrawHandle<'_>>,
+        d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         state: &crate::state::State,
     ) {
         let screen = (d.get_screen_width() as f32, d.get_screen_height() as f32);

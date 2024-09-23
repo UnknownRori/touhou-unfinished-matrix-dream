@@ -62,7 +62,7 @@ impl<'a> State<'a> {
         self.current_scene = Some(scene);
     }
 
-    pub fn update(&mut self, d: &RaylibDrawHandle) {
+    pub fn update(&mut self, d: &mut RaylibDrawHandle) {
         if self.current_scene.is_some() {
             let mut scene = self.current_scene.take().unwrap();
             scene.update(d, self);
@@ -72,11 +72,23 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn draw(&mut self, d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>) {
+    pub fn draw(
+        &mut self,
+        d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
+    ) {
         d.clear_background(Color::BLACK);
         if self.current_scene.is_some() {
             let scene = self.current_scene.take().unwrap();
             scene.draw(d, self);
+            self.current_scene = Some(scene);
+        }
+    }
+
+    pub fn draw_stage(&mut self, d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>) {
+        d.clear_background(Color::BLANK);
+        if self.current_scene.is_some() {
+            let scene = self.current_scene.take().unwrap();
+            scene.draw_stage(d, self);
             self.current_scene = Some(scene);
         }
     }
