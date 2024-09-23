@@ -114,7 +114,7 @@ impl<'a> AudioAssets<'a> {
             "U.N. Owen Was Her",
             "Zun - Remixed by UnknownRori",
             "Flandre Scarlet's theme, are you scared?",
-            "./assets/bgm/pure-furies.ogg",
+            "./assets/bgm/un-owen.ogg",
             audio,
         ));
 
