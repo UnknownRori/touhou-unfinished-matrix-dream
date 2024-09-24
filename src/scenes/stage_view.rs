@@ -4,11 +4,12 @@ use hecs::World;
 use raylib::prelude::*;
 
 use crate::{
+    components::{Transform2D, Wanderable},
     controls::Action,
     event::EventManager,
     systems::{
-        delete_offscreen, draw_circle_hitbox, draw_focus, draw_sprites_system, player_control,
-        rotate_focus, update_movement,
+        delete_offscreen, draw_boss_bg, draw_circle_hitbox, draw_focus, draw_sprites_system,
+        player_control, rotate_focus, update_movement, wanderable_search,
     },
     ui::basic_choice::BasicChoice,
     utility::get_sprite_coord,
@@ -133,6 +134,7 @@ impl Scene for StageView {
                 update_movement(&self.world, d);
                 rotate_focus(&self.world, d);
                 delete_offscreen(&mut self.world);
+                wanderable_search(&self.world, d);
             }
         }
     }
@@ -391,9 +393,27 @@ impl Scene for StageView {
         }
 
         {
+            draw_boss_bg(&self.world, state, &mut md);
             draw_sprites_system(&self.world, state, &mut md);
             draw_focus(&self.world, state, &mut md);
             draw_circle_hitbox(&self.world, &mut md);
+            self.world.query::<&Wanderable>().iter().for_each(|(_, w)| {
+                if let Some(tgt) = w.target_pos {
+                    md.draw_rectangle(tgt.re as i32 - 32, tgt.im as i32 - 32, 32, 32, Color::RED);
+                }
+            });
+
+            self.world
+                .query::<&Transform2D>()
+                .iter()
+                .for_each(|(_, t)| {
+                    md.draw_circle(
+                        t.position.re as i32,
+                        t.position.im as i32,
+                        10.,
+                        Color::WHITE,
+                    );
+                });
         }
 
         if self.state == GameState::Paused {

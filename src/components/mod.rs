@@ -23,10 +23,33 @@ pub struct BeenOnScreen(pub bool);
 pub struct Cooldown(pub Timer);
 
 pub struct Focusable(pub f32, pub f32);
+pub struct RotatingBgBoss(pub f32, pub f32);
 
 impl Cooldown {
     pub fn new(time: f32) -> Self {
         Self(Timer::new(time, true))
+    }
+}
+
+pub struct Wanderable {
+    pub wander_size: Rectangle,
+    pub last_pos: Complex<f32>,
+    pub target_pos: Option<Complex<f32>>,
+    pub elapsed: f32,
+    pub wait: f32,
+    pub speed: f32,
+}
+
+impl Wanderable {
+    pub fn new(wander_size: Rectangle, last_pos: Complex<f32>, speed: f32, wait: f32) -> Self {
+        Self {
+            wander_size,
+            wait,
+            elapsed: 0.,
+            last_pos,
+            target_pos: None,
+            speed,
+        }
     }
 }
 
