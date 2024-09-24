@@ -3,7 +3,9 @@ use std::fmt::Debug;
 use hecs::World;
 use raylib::prelude::*;
 
-use crate::{controls::Action, ui::basic_choice::BasicChoice, utility::get_sprite_coord};
+use crate::{
+    controls::Action, event::EventManager, ui::basic_choice::BasicChoice, utility::get_sprite_coord,
+};
 
 use super::{main_menu::MainMenu, Scene};
 
@@ -14,16 +16,18 @@ enum GameState {
 }
 
 pub struct StageView {
-    world: World,
-    camera: Camera2D,
+    pub world: World,
+    pub camera: Camera2D,
     bg: String,
 
-    bg_pos: Vector2,
-    bg_movement: Vector2,
+    pub bg_pos: Vector2,
+    pub bg_movement: Vector2,
     state: GameState,
 
     current_index: usize,
     choices: [BasicChoice; 3],
+
+    event: Option<EventManager>,
 }
 
 impl Debug for StageView {
@@ -33,7 +37,7 @@ impl Debug for StageView {
 }
 
 impl StageView {
-    pub fn new(bg: String) -> Self {
+    pub fn new(bg: String, event: EventManager) -> Self {
         let world = World::new();
         let camera = Camera2D {
             target: Vector2 { x: 0.0, y: 0.0 },
@@ -51,6 +55,7 @@ impl StageView {
             bg_pos,
             bg_movement,
             state,
+            event: Some(event),
 
             current_index: 0,
             choices: [
@@ -107,10 +112,15 @@ impl Scene for StageView {
                 }
             }
             GameState::Resumed => {
+                state.audio.update_bgm();
                 self.bg_pos += self.bg_movement * d.get_frame_time();
                 if self.bg_pos.y >= 448. {
                     self.bg_pos.y = 0.;
                 }
+
+                let mut event = self.event.take().unwrap();
+                event.update(self, state, d.get_frame_time());
+                self.event = Some(event);
             }
         }
     }
