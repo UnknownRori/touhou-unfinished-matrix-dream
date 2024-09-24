@@ -3,7 +3,15 @@ use std::fmt::Debug;
 use hecs::World;
 use raylib::prelude::*;
 
+use crate::{controls::Action, utility::get_sprite_coord};
+
 use super::Scene;
+
+#[derive(Debug, PartialEq)]
+enum GameState {
+    Paused,
+    Resumed,
+}
 
 pub struct StageView {
     world: World,
@@ -12,6 +20,7 @@ pub struct StageView {
 
     bg_pos: Vector2,
     bg_movement: Vector2,
+    state: GameState,
 }
 
 impl Debug for StageView {
@@ -31,12 +40,14 @@ impl StageView {
         };
         let bg_pos = Vector2::new(0., 0.);
         let bg_movement = Vector2::new(0., 100.);
+        let state = GameState::Resumed;
         Self {
             world,
             bg,
             camera,
             bg_pos,
             bg_movement,
+            state,
         }
     }
 }
@@ -46,10 +57,28 @@ impl Scene for StageView {
         //
     }
 
-    fn update(&mut self, d: &mut raylib::prelude::RaylibDrawHandle, _: &mut crate::state::State) {
-        self.bg_pos += self.bg_movement * d.get_frame_time();
-        if self.bg_pos.y >= 448. {
-            self.bg_pos.y = 0.;
+    fn update(
+        &mut self,
+        d: &mut raylib::prelude::RaylibDrawHandle,
+        state: &mut crate::state::State,
+    ) {
+        if state.controls.is_pressed(Action::Escape, d) {
+            match self.state {
+                GameState::Paused => self.state = GameState::Resumed,
+                GameState::Resumed => self.state = GameState::Paused,
+            }
+        }
+
+        match self.state {
+            GameState::Paused => {
+                // TODO : Fill this with pause control
+            }
+            GameState::Resumed => {
+                self.bg_pos += self.bg_movement * d.get_frame_time();
+                if self.bg_pos.y >= 448. {
+                    self.bg_pos.y = 0.;
+                }
+            }
         }
     }
 
@@ -135,6 +164,23 @@ impl Scene for StageView {
             Color::WHITE,
         );
 
+        for i in 0..5 {
+            let coord = if state.score.life > i {
+                get_sprite_coord(7, 0, 32., 32.)
+            } else {
+                get_sprite_coord(7, 1, 32., 32.)
+            };
+
+            d.draw_texture_pro(
+                &state.assets.get("commons_sprite"),
+                coord,
+                Rectangle::new(540. + 18. * i as f32, 94., 32., 32.),
+                Vector2::new(0., 0.),
+                0.,
+                Color::WHITE,
+            );
+        }
+
         // INFO : Spell Cards
         d.draw_text_pro(
             &state.assets.font,
@@ -147,11 +193,28 @@ impl Scene for StageView {
             Color::WHITE,
         );
 
+        for i in 0..5 {
+            let coord = if state.score.spell > i {
+                get_sprite_coord(4, 0, 32., 32.)
+            } else {
+                get_sprite_coord(4, 1, 32., 32.)
+            };
+
+            d.draw_texture_pro(
+                &state.assets.get("commons_sprite"),
+                coord,
+                Rectangle::new(540. + 18. * i as f32, 118., 32., 32.),
+                Vector2::new(0., 0.),
+                0.,
+                Color::WHITE,
+            );
+        }
+
         // INFO : Power
         d.draw_text_pro(
             &state.assets.font,
             "Power",
-            Vector2::new(420., 154.),
+            Vector2::new(450., 154.),
             Vector2::new(0., 0.),
             0.,
             18.,
@@ -159,14 +222,42 @@ impl Scene for StageView {
             Color::WHITE,
         );
 
+        d.draw_texture_pro(
+            &state.assets.get("commons_sprite"),
+            get_sprite_coord(6, 0, 32., 32.),
+            Rectangle::new(420., 150., 32., 32.),
+            Vector2::new(0., 0.),
+            0.,
+            Color::WHITE,
+        );
+        let value = format!("{:.2}", state.score.power);
+        d.draw_text_pro(
+            &state.assets.font,
+            &value,
+            Vector2::new(550., 154.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.5,
+            Color::WHITE,
+        );
+
         // INFO : Value
         d.draw_text_pro(
             &state.assets.font,
             "Value",
-            Vector2::new(420., 174.),
+            Vector2::new(450., 174.),
             Vector2::new(0., 0.),
             0.,
             18.,
+            0.,
+            Color::WHITE,
+        );
+        d.draw_texture_pro(
+            &state.assets.get("commons_sprite"),
+            get_sprite_coord(5, 0, 32., 32.),
+            Rectangle::new(420., 170., 32., 32.),
+            Vector2::new(0., 0.),
             0.,
             Color::WHITE,
         );
@@ -187,7 +278,7 @@ impl Scene for StageView {
         d.draw_text_pro(
             &state.assets.font,
             "Graze",
-            Vector2::new(420., 194.),
+            Vector2::new(450., 194.),
             Vector2::new(0., 0.),
             0.,
             18.,
@@ -220,6 +311,10 @@ impl Scene for StageView {
                 Vector2::new(0., self.bg_pos.y - 448. * i as f32),
                 Color::WHITE,
             );
+        }
+
+        if self.state == GameState::Paused {
+            md.draw_rectangle(0, 0, 384, 448, Color::new(0, 0, 0, 128));
         }
     }
 
