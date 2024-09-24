@@ -2,6 +2,7 @@ use crate::{
     controls::Action,
     difficulty::Difficulty,
     score::ScoreData,
+    stage::stage1,
     state::State,
     ui::character_selection::{Character, DifficultyChoice, ShotType},
 };
@@ -59,11 +60,11 @@ impl CharacterSelection {
 
 impl Scene for CharacterSelection {
     fn init(&mut self, state: &mut State) {
-        state.audio.bgm[0].play_stream(state.bgm_volume);
+        //
     }
 
-    fn clean_up(&mut self, _: &mut State) {
-        //
+    fn clean_up(&mut self, state: &mut State) {
+        state.audio.stop_bgm();
     }
 
     fn update(&mut self, d: &mut RaylibDrawHandle, state: &mut State) {
@@ -87,7 +88,7 @@ impl Scene for CharacterSelection {
                 CurrentSelection::Character => {
                     if self.character_select[0] == 0 && self.character_select[1] == 0 {
                         state.score = ScoreData::new(Difficulty::Normal);
-                        state.change_scene(Box::new(StageView::new("stg1".to_owned())));
+                        state.change_scene(Box::new(StageView::new("stg1".to_owned(), stage1())));
                     }
                 }
             }

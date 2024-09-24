@@ -34,7 +34,7 @@ impl Scene for MainMenu {
     }
 
     fn clean_up(&mut self, state: &mut crate::state::State) {
-        state.audio.stop_bgm();
+        //
     }
 
     fn draw(

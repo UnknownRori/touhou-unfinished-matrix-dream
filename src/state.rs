@@ -56,7 +56,6 @@ impl<'a> State<'a> {
         if self.current_scene.is_some() {
             let mut old_scene = self.current_scene.take().unwrap();
             old_scene.clean_up(self);
-            drop(old_scene);
         }
         scene.init(self);
         self.current_scene = Some(scene);
@@ -68,6 +67,8 @@ impl<'a> State<'a> {
             scene.update(d, self);
             if self.current_scene.is_none() {
                 self.current_scene = Some(scene);
+            } else {
+                scene.clean_up(self);
             }
         }
     }
