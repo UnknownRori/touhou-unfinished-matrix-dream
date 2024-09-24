@@ -59,6 +59,152 @@ impl Scene for StageView {
         state: &crate::state::State,
     ) {
         d.draw_texture(&state.assets.get("stage_view"), 0, 0, Color::WHITE);
+        d.draw_text_pro(
+            &state.assets.font,
+            state.score.difficulty.as_ref(),
+            Vector2::new(480., 20.),
+            Vector2::new(0., 0.),
+            0.,
+            24.,
+            0.,
+            Color::WHITE,
+        );
+        d.draw_texture_ex(
+            &state.assets.get("title"),
+            Vector2::new(460., 250.),
+            0.,
+            0.65,
+            Color::WHITE,
+        );
+
+        // INFO : Score
+        d.draw_text_pro(
+            &state.assets.font,
+            "Hi-Score",
+            Vector2::new(420., 54.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.,
+            Color::WHITE,
+        );
+        let score_text = format!("{:08}", 00100000);
+        d.draw_text_pro(
+            &state.assets.font,
+            &score_text,
+            Vector2::new(550., 54.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.5,
+            Color::WHITE,
+        );
+
+        d.draw_text_pro(
+            &state.assets.font,
+            "Score",
+            Vector2::new(420., 74.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.,
+            Color::WHITE,
+        );
+        let score_text = format!("{:08}", state.score.score);
+
+        d.draw_text_pro(
+            &state.assets.font,
+            &score_text,
+            Vector2::new(550., 74.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.5,
+            Color::WHITE,
+        );
+
+        // INFO : Life
+        d.draw_text_pro(
+            &state.assets.font,
+            "Life",
+            Vector2::new(420., 104.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.,
+            Color::WHITE,
+        );
+
+        // INFO : Spell Cards
+        d.draw_text_pro(
+            &state.assets.font,
+            "Spell Cards",
+            Vector2::new(420., 128.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.,
+            Color::WHITE,
+        );
+
+        // INFO : Power
+        d.draw_text_pro(
+            &state.assets.font,
+            "Power",
+            Vector2::new(420., 154.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.,
+            Color::WHITE,
+        );
+
+        // INFO : Value
+        d.draw_text_pro(
+            &state.assets.font,
+            "Value",
+            Vector2::new(420., 174.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.,
+            Color::WHITE,
+        );
+
+        let score_text = format!("{:08}", state.score.value);
+        d.draw_text_pro(
+            &state.assets.font,
+            &score_text,
+            Vector2::new(550., 174.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.5,
+            Color::WHITE,
+        );
+
+        // INFO : Graze
+        d.draw_text_pro(
+            &state.assets.font,
+            "Graze",
+            Vector2::new(420., 194.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.,
+            Color::WHITE,
+        );
+        let score_text = format!("{:08}", state.score.graze);
+        d.draw_text_pro(
+            &state.assets.font,
+            &score_text,
+            Vector2::new(550., 194.),
+            Vector2::new(0., 0.),
+            0.,
+            18.,
+            0.5,
+            Color::WHITE,
+        );
     }
 
     fn draw_stage(

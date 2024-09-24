@@ -136,10 +136,13 @@ impl Assets {
         let font = rl
             .load_font(thread, "./assets/fonts/pc-9800-bold.ttf")
             .expect("[-] File not found!");
+        font.texture()
+            .set_texture_filter(thread, TextureFilter::TEXTURE_FILTER_POINT);
         let mut assets = Self { textures, font };
 
         assets.load_textures(rl, thread, "./assets/ui/main-menu.png", "main_menu");
         assets.load_textures(rl, thread, "./assets/ui/stage-view.png", "stage_view");
+        assets.load_textures(rl, thread, "./assets/ui/title.png", "title");
         assets.load_textures_wrap(rl, thread, "./assets/backgrounds/stage1/bg.png", "stg1");
 
         assets.load_textures(rl, thread, "./assets/characters/filler.png", "dummy_char");
