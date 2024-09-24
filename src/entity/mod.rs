@@ -1,15 +1,35 @@
+use std::collections::VecDeque;
+
 use hecs::World;
 use raylib::prelude::*;
 
 use crate::{
     cmpx,
     components::{
-        Attack, BasicPlayerAttack, Boss, CircleHitbox, Controllable, Cooldown, Enemy, Focusable,
-        MoveParams, Player, PlayerAttack, PlayerSpells, RotatingBgBoss, Sprite, Transform2D,
-        Wanderable,
+        Attack, AttackMove, BasicPlayerAttack, Boss, BossMove, BossMoves, Bullet, BulletSetup,
+        CircleHitbox, Controllable, Cooldown, DieOffScreen, Enemy, Focusable, Hitpoint, MoveParams,
+        Player, PlayerAttack, PlayerSpells, RotatingBgBoss, Sprite, Transform2D, Wanderable,
     },
+    utility::timer::Timer,
     vec2,
 };
+pub fn create_enemy_bullet(
+    world: &mut World,
+    transform: Transform2D,
+    sprite: Sprite,
+    movement: MoveParams,
+    hitbox: CircleHitbox,
+) {
+    world.spawn((
+        Enemy,
+        Bullet,
+        DieOffScreen,
+        movement,
+        transform,
+        sprite,
+        hitbox,
+    ));
+}
 
 pub fn reimu_a(world: &mut World) {
     world.spawn((
@@ -42,5 +62,67 @@ pub fn miko(world: &mut World) {
         ),
         MoveParams::move_linear(cmpx!(0.)),
         CircleHitbox::new(12., vec2!(16., 32.)),
+        BossMoves(VecDeque::from([
+            BossMove::NonSpells {
+                timeout: Timer::new(120., false),
+                hp: Hitpoint::new(1000.),
+                attack: AttackMove::Multiple(Vec::from([
+                    AttackMove::Circle {
+                        sides: 12,
+                        speed: 200.,
+                        rotation_per_fire: 2.,
+                        rotation: 3.,
+                        cooldown: Cooldown(Timer::new(2.5, true)),
+                        setup: BulletSetup(
+                            Sprite::new("miko_sprite", 0, 3, 32., 32.),
+                            CircleHitbox::new(2.5, vec2!(16.)),
+                        ),
+                    },
+                    AttackMove::AtPlayer {
+                        num: 12,
+                        speed: 200.,
+                        spread: 12.,
+                        total_shoot: 12,
+                        cooldown: Cooldown(Timer::new(5., true)),
+                        setup: BulletSetup(
+                            Sprite::new("miko_sprite", 0, 4, 32., 32.),
+                            CircleHitbox::new(2.5, vec2!(16.)),
+                        ),
+                    },
+                ])),
+            },
+            BossMove::Spells {
+                name: "Hermit Sign 'Taoist of the Land of the Rising Sun'".to_owned(),
+                timeout: Timer::new(240., false),
+                hp: Hitpoint::new(1500.),
+                attack: AttackMove::Multiple(
+                    [
+                        AttackMove::Circle {
+                            sides: 12,
+                            speed: 200.,
+                            rotation_per_fire: 2.,
+                            rotation: 3.,
+                            cooldown: Cooldown(Timer::new(2.5, true)),
+                            setup: BulletSetup(
+                                Sprite::new("miko_sprite", 0, 4, 32., 32.),
+                                CircleHitbox::new(2.5, vec2!(16.)),
+                            ),
+                        },
+                        AttackMove::AtPlayer {
+                            num: 12,
+                            speed: 200.,
+                            spread: 12.,
+                            total_shoot: 12,
+                            cooldown: Cooldown(Timer::new(5., true)),
+                            setup: BulletSetup(
+                                Sprite::new("reimu_sprite", 0, 6, 64., 64.),
+                                CircleHitbox::new(10., vec2!(32.)),
+                            ),
+                        },
+                    ]
+                    .to_vec(),
+                ),
+            },
+        ])),
     ));
 }

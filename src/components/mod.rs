@@ -1,4 +1,6 @@
-use hecs::World;
+use std::collections::VecDeque;
+
+use hecs::{Entity, World};
 use num_complex::Complex;
 use raylib::prelude::*;
 
@@ -6,6 +8,7 @@ use crate::{
     cmpx,
     math::ToVec2,
     state::State,
+    systems::update_cooldown_attack,
     utility::{get_sprite_coord, timer::Timer},
     vec2,
 };
@@ -16,6 +19,7 @@ pub struct Enemy;
 pub struct Boss;
 pub struct Bullet;
 pub struct DieOffScreen;
+pub struct Damage(f32);
 
 #[derive(Debug, Clone)]
 pub struct BeenOnScreen(pub bool);
@@ -54,7 +58,7 @@ impl Wanderable {
 }
 
 #[derive(Debug, Clone)]
-pub struct BulletSetup(pub Sprite);
+pub struct BulletSetup(pub Sprite, pub CircleHitbox);
 
 #[derive(Debug, Clone)]
 pub enum AttackMove {
@@ -68,6 +72,7 @@ pub enum AttackMove {
     },
     Circle {
         sides: u16,
+        speed: f32,
         rotation_per_fire: f32,
         rotation: f32,
         cooldown: Cooldown,
@@ -75,6 +80,48 @@ pub enum AttackMove {
     },
     Multiple(Vec<AttackMove>),
 }
+
+#[derive(Debug, Clone)]
+pub enum BossMove {
+    Spells {
+        name: String,
+        timeout: Timer,
+        hp: Hitpoint,
+        attack: AttackMove,
+    },
+    NonSpells {
+        timeout: Timer,
+        hp: Hitpoint,
+        attack: AttackMove,
+    },
+}
+
+impl BossMove {
+    pub fn update_cooldown(&mut self, d: f32) {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => {
+                timeout.update(d);
+                update_cooldown_attack(attack, d);
+            }
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => {
+                timeout.update(d);
+                update_cooldown_attack(attack, d);
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BossMoves(pub VecDeque<BossMove>);
 
 pub enum BasicPlayerAttack {
     ReimuA,
@@ -92,6 +139,7 @@ impl BasicPlayerAttack {
                     scale: vec2!(1.),
                     rotation: 0.,
                 },
+                Damage(10.),
                 Sprite::new("reimu_sprite", 0, 4, 32., 32.),
                 MoveParams::move_linear(cmpx!(0., -5000.)),
                 CircleHitbox::new(2., vec2!(16.)),

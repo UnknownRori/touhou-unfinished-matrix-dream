@@ -1,13 +1,16 @@
-use hecs::World;
+use hecs::{Entity, World};
+use num_complex::Complex;
 use raylib::prelude::*;
 
 use crate::{
     cmpx,
     components::{
-        BeenOnScreen, Boss, CircleHitbox, Controllable, DieOffScreen, Focusable, MoveParams,
-        PlayerAttack, RotatingBgBoss, Sprite, Transform2D, Wanderable,
+        AttackMove, BeenOnScreen, Boss, BossMoves, CircleHitbox, Controllable, DieOffScreen, Enemy,
+        Focusable, MoveParams, Player, PlayerAttack, RotatingBgBoss, Sprite, Transform2D,
+        Wanderable,
     },
     controls::Action,
+    entity::create_enemy_bullet,
     math::{ComplexExt, ToVec2},
     state::State,
     utility::get_sprite_coord,
@@ -32,6 +35,143 @@ pub fn draw_sprites_system(
                 Color::WHITE,
             );
         });
+}
+
+pub fn update_boss_attack(world: &mut World, state: &State, d: &RaylibDrawHandle) {
+    let players = world
+        .query::<(&Player, &Controllable, &Transform2D)>()
+        .iter()
+        .map(|(id, (_, _, transform))| (id.clone(), transform.clone()))
+        .collect::<Vec<_>>();
+
+    let mut boss = world
+        .query::<(&Boss, &Enemy, &Transform2D, &BossMoves)>()
+        .iter()
+        .map(|(id, (_, _, transform, boss))| {
+            (
+                id.clone(),
+                transform.clone(),
+                match boss.0.front() {
+                    Some(attack) => Some(attack.clone()),
+                    None => None,
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+
+    boss.iter_mut().for_each(|(id, transform, boss)| {
+        if let Some(ref mut attack) = boss {
+            if let Some(player) = players.first() {
+                let attack_move = match attack {
+                    crate::components::BossMove::Spells {
+                        name,
+                        timeout,
+                        hp,
+                        attack,
+                    } => attack,
+                    crate::components::BossMove::NonSpells {
+                        timeout,
+                        hp,
+                        attack,
+                    } => attack,
+                };
+                handle_fire_bullet(world, &id, &attack_move, transform, &player.1, d);
+                attack.update_cooldown(d.get_frame_time());
+                let mut boss_move = world.get::<&mut BossMoves>(*id).unwrap();
+                *boss_move.0.front_mut().unwrap() = attack.clone();
+            }
+        }
+    });
+}
+
+pub fn update_cooldown_attack(attack: &mut AttackMove, d: f32) {
+    match attack {
+        AttackMove::AtPlayer { cooldown, .. } => cooldown.0.update(d),
+        AttackMove::Circle { cooldown, .. } => cooldown.0.update(d),
+        AttackMove::Multiple(attacks) => attacks
+            .iter_mut()
+            .for_each(|attack| update_cooldown_attack(attack, d)),
+    };
+}
+
+fn handle_fire_bullet(
+    world: &mut World,
+    id: &Entity,
+    attack_move: &AttackMove,
+    transform: &Transform2D,
+    player: &Transform2D,
+    d: &RaylibDrawHandle,
+) {
+    match attack_move {
+        AttackMove::AtPlayer {
+            num,
+            speed,
+            spread,
+            total_shoot,
+            cooldown,
+            setup,
+        } if cooldown.0.completed() => {
+            if *total_shoot <= 0 {
+                return;
+            }
+
+            if *num > 1 {
+                for i in 0..*num as i32 {
+                    let rand_x = d.get_random_value::<i32>(1..100) as f32 / 1000.;
+                    let rand_y = d.get_random_value::<i32>(1..100) as f32 / 1000.;
+                    let angle = (i - 1) as f32 * spread;
+                    let dir =
+                        transform.position.dir(player.position()) * Complex::cdir(angle) * speed
+                            + cmpx!(rand_x, rand_y);
+                    let move_params = MoveParams::move_linear(dir);
+                    let transform = Transform2D {
+                        rotation: dir.rot(),
+                        scale: vec2!(0.05),
+                        ..*transform
+                    };
+                    create_enemy_bullet(world, transform, setup.0.clone(), move_params, setup.1);
+                }
+                return;
+            }
+
+            let dir = transform.position.dir(player.position()) * speed;
+            println!("{}", dir.rot());
+            let move_params = MoveParams::move_linear(dir);
+            let transform = Transform2D {
+                scale: vec2!(1.),
+                rotation: dir.rot(),
+                ..*transform
+            };
+            create_enemy_bullet(world, transform, setup.0.clone(), move_params, setup.1);
+        }
+        AttackMove::Multiple(moves) => moves.iter().for_each(|attack_move| {
+            handle_fire_bullet(world, id, attack_move, transform, player, d)
+        }),
+        AttackMove::Circle {
+            sides,
+            speed,
+            rotation_per_fire,
+            rotation,
+            cooldown,
+            setup,
+        } if cooldown.0.completed() => {
+            for side in 0..*sides {
+                let rotation =
+                    (side as f32 / *sides as f32) * std::f32::consts::PI * 2. + *rotation;
+                let dir = Complex::cdir(rotation) * speed;
+                let move_params = MoveParams::move_linear(dir);
+
+                let transform = Transform2D {
+                    scale: vec2!(1.),
+                    rotation: dir.rot(),
+                    ..*transform
+                };
+                create_enemy_bullet(world, transform, setup.0.clone(), move_params, setup.1);
+            }
+        }
+
+        AttackMove::AtPlayer { .. } | AttackMove::Circle { .. } => {}
+    }
 }
 
 pub fn update_movement(world: &World, d: &RaylibDrawHandle<'_>) {
