@@ -59,14 +59,16 @@ impl Scene for MusicRoom {
             self.selection_index -= 1;
         }
 
-        if state.controls.is_pressed(Action::Accept, d) {
+        if state.controls.is_pressed(Action::Accept, d)
+            || state.controls.is_pressed(Action::Attack, d)
+        {
             self.current_music = self.selection_index;
             state.audio.play_bgm(self.current_music, state.bgm_volume);
         }
     }
 
     fn draw(
-        &self,
+        &mut self,
         d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         state: &crate::state::State,
     ) {

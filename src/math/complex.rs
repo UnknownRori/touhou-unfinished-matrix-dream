@@ -1,6 +1,6 @@
-use std::f32::consts::FRAC_PI_2;
+use std::f32::consts::{FRAC_1_PI, FRAC_PI_2};
 
-use num_complex::Complex;
+use num_complex::{Complex, ComplexFloat};
 use raylib::prelude::*;
 
 use super::{CartesianExt, ToVec2};
@@ -59,6 +59,10 @@ impl ComplexExt for Complex<f32> {
     }
 
     fn rot(&self) -> f32 {
-        self.conj().arg() - FRAC_PI_2
+        self.arg().to_degrees() + 90.
     }
+
+    // fn rot(&self, other: &Self) -> f32 {
+    //     (self.arg() - other.arg()).to_degrees()
+    // }
 }

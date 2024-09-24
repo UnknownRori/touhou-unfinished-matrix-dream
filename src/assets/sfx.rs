@@ -12,7 +12,9 @@ impl<'a> Sfx<'a> {
     }
 
     pub fn play(&mut self, volume: f32) {
-        self.0.set_volume(volume);
-        self.0.play();
+        if !self.0.is_playing() {
+            self.0.set_volume(volume);
+            self.0.play();
+        }
     }
 }

@@ -3,11 +3,12 @@ use num_complex::Complex;
 use raylib::prelude::*;
 
 use crate::{
+    assets::{Assets, AudioAssets},
     cmpx,
     components::{
-        AttackMove, BeenOnScreen, Boss, BossMoves, CircleHitbox, Controllable, DieOffScreen, Enemy,
-        Focusable, MoveParams, Player, PlayerAttack, RotatingBgBoss, Sprite, Transform2D,
-        Wanderable,
+        AttackMove, BeenOnScreen, Boss, BossMoves, Bullet, CircleHitbox, Controllable, Damage,
+        DieOffScreen, Enemy, Focusable, Hitpoint, InvulnerableDelay, MoveParams, Player,
+        PlayerAttack, RotatingBgBoss, Sprite, Transform2D, Wanderable,
     },
     controls::Action,
     entity::create_enemy_bullet,
@@ -23,21 +24,32 @@ pub fn draw_sprites_system(
     d: &mut RaylibMode2D<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
 ) {
     world
-        .query::<(&Sprite, &Transform2D)>()
+        .query::<(&Sprite, &Transform2D, Option<&InvulnerableDelay>)>()
         .iter()
-        .for_each(|(_, (s, t))| {
+        .for_each(|(_, (s, t, i))| {
+            let color: Color = if i.is_some() {
+                let i = i.unwrap();
+                let blink_duration: f32 = 0.2;
+                let should_blink = (i.0 % (2.0 * blink_duration)) < blink_duration;
+                match should_blink {
+                    true => Color::new(255, 255, 255, 128),
+                    false => Color::WHITE,
+                }
+            } else {
+                Color::WHITE
+            };
             d.draw_texture_pro(
                 &state.assets.get(s.name),
                 s.src,
                 Rectangle::new(t.position().re, t.position().im, s.src.width, s.src.height),
-                Vector2::new(0., 0.),
+                Vector2::new(s.src.width / 2., s.src.height / 2.),
                 t.rotation,
-                Color::WHITE,
+                color,
             );
         });
 }
 
-pub fn update_boss_attack(world: &mut World, state: &State, d: &RaylibDrawHandle) {
+pub fn update_boss_attack(world: &mut World, state: &mut State, d: &RaylibDrawHandle) {
     let players = world
         .query::<(&Player, &Controllable, &Transform2D)>()
         .iter()
@@ -75,13 +87,237 @@ pub fn update_boss_attack(world: &mut World, state: &State, d: &RaylibDrawHandle
                         attack,
                     } => attack,
                 };
-                handle_fire_bullet(world, &id, &attack_move, transform, &player.1, d);
+                handle_fire_bullet(
+                    world,
+                    &id,
+                    &attack_move,
+                    transform.position,
+                    player.1.position,
+                    d,
+                    state,
+                );
                 attack.update_cooldown(d.get_frame_time());
+                let timeout = attack.is_timeout();
                 let mut boss_move = world.get::<&mut BossMoves>(*id).unwrap();
-                *boss_move.0.front_mut().unwrap() = attack.clone();
+                // INFO : make every bullet has it's own sound
+
+                if timeout {
+                    state.audio.spell_end.play(state.sfx_volume);
+                    boss_move.0.pop_front();
+                } else {
+                    *boss_move.0.front_mut().unwrap() = attack.clone();
+                }
             }
         }
     });
+}
+
+pub fn invulnerable_delay_update(world: &mut World, d: &RaylibDrawHandle) {
+    let data = world
+        .query::<&InvulnerableDelay>()
+        .iter()
+        .map(|(id, _)| id.clone())
+        .collect::<Vec<_>>();
+
+    for id in data {
+        let mut i = world.get::<&mut InvulnerableDelay>(id).unwrap();
+        i.0 -= d.get_frame_time();
+        let mut should_remove = false;
+        if i.0 < 0. {
+            should_remove = true;
+        }
+        drop(i);
+        if should_remove {
+            let _ = world.remove_one::<InvulnerableDelay>(id);
+        }
+    }
+}
+
+pub fn draw_boss_hp(
+    world: &World,
+    state: &State,
+    d: &mut RaylibMode2D<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
+) {
+    let data = world
+        .query::<(&Boss, &Enemy, &Transform2D, &BossMoves)>()
+        .iter()
+        .map(|(_, (_, _, transform, boss))| {
+            (
+                transform.position.clone(),
+                match boss.0.front() {
+                    Some(attack) => Some(attack.clone()),
+                    None => None,
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+
+    for (t, a) in data {
+        if a.is_some() {
+            let a = a.unwrap();
+            let cur_hp = a.get_cur_hp();
+            let max_hp = a.get_max_hp();
+            let hp_percentage = cur_hp / max_hp;
+            let start_angle = 0.0;
+            let end_angle = 360.0 * hp_percentage;
+
+            d.draw_text_pro(
+                &state.assets.font,
+                &format!("{}", a.get_time()),
+                Vector2::new(360., 0.),
+                Vector2::new(0., 0.),
+                0.,
+                16.,
+                0.,
+                Color::WHITE,
+            );
+            match a {
+                crate::components::BossMove::Spells {
+                    name,
+                    timeout,
+                    hp,
+                    attack,
+                } => {
+                    d.draw_text_pro(
+                        &state.assets.font,
+                        &name,
+                        Vector2::new(0., 0.),
+                        Vector2::new(0., 0.),
+                        0.,
+                        14.,
+                        0.,
+                        Color::WHITE,
+                    );
+                }
+                _ => {}
+            }
+
+            d.draw_ring(
+                t.to_vec2(),
+                42.,
+                40.,
+                start_angle,
+                end_angle,
+                32,
+                Color::new(255, 0, 0, 200),
+            );
+        }
+    }
+}
+
+pub fn update_collision(world: &mut World, state: &mut State) {
+    let players = world
+        .query::<(
+            &Player,
+            &Controllable,
+            &Transform2D,
+            &CircleHitbox,
+            Option<&InvulnerableDelay>,
+        )>()
+        .iter()
+        .map(|(id, (_, _, transform, hitbox, i))| {
+            (
+                id.clone(),
+                transform.clone(),
+                hitbox.clone(),
+                match i {
+                    Some(_) => false,
+                    None => true,
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let enemies = world
+        .query::<(&Enemy, &Transform2D, &CircleHitbox)>()
+        .without::<&Bullet>()
+        .without::<&Boss>()
+        .iter()
+        .map(|(id, (_, transform, hitbox))| (id.clone(), transform.clone(), hitbox.clone()))
+        .collect::<Vec<_>>();
+
+    let player_bullets = world
+        .query::<(&Player, &Bullet, &Transform2D, &CircleHitbox, &Damage)>()
+        .iter()
+        .map(|(id, (_, _, transform, hitbox, damage))| {
+            (id.clone(), transform.clone(), hitbox.clone(), damage.0)
+        })
+        .collect::<Vec<_>>();
+
+    let enemy_bullets = world
+        .query::<(&Enemy, &Bullet, &Transform2D, &CircleHitbox)>()
+        .iter()
+        .map(|(id, (_, _, transform, hitbox))| (id.clone(), transform.clone(), hitbox.clone()))
+        .collect::<Vec<_>>();
+
+    let boss = world
+        .query::<(&Boss, &Enemy, &Transform2D, &CircleHitbox)>()
+        .iter()
+        .map(|(id, (_, _, transform, hitbox))| (id.clone(), transform.clone(), hitbox.clone()))
+        .collect::<Vec<_>>();
+
+    {
+        if let Some(player) = players.first() {
+            for enemy_bullet in enemy_bullets {
+                if player
+                    .2
+                    .is_intersect(&player.1, &enemy_bullet.1, &enemy_bullet.2)
+                    && player.3
+                {
+                    let _ = world.despawn(enemy_bullet.0);
+                    state.score.life -= 1;
+                    state.audio.death_sfx.play(state.sfx_volume);
+                    let _ = world.insert_one(player.0, InvulnerableDelay(2.)).unwrap();
+                    let mut a = world.get::<&mut Transform2D>(player.0).unwrap();
+                    a.position = cmpx!(150., 400.);
+                }
+            }
+        }
+    }
+    {
+        for player_bullet in &player_bullets {
+            for boss in &boss {
+                if player_bullet
+                    .2
+                    .is_intersect(&player_bullet.1, &boss.1, &boss.2)
+                {
+                    let _ = world.despawn(player_bullet.0);
+
+                    // TODO : Make the damage based on bullet type
+                    match world.satisfies::<&Hitpoint>(boss.0) {
+                        Ok(exist) if exist => {
+                            world
+                                .get::<&mut Hitpoint>(boss.0)
+                                .unwrap()
+                                .damage(player_bullet.3);
+                        }
+                        _ => {}
+                    };
+
+                    let mut despawn = false;
+                    {
+                        let mut ab = world.query_one::<&mut BossMoves>(boss.0).unwrap();
+                        let a = ab.get().unwrap();
+                        despawn = match a.0.front_mut() {
+                            Some(attack) => {
+                                attack.damage(player_bullet.3);
+                                if attack.is_dead() {
+                                    state.audio.spell_end.play(state.sfx_volume);
+                                    a.0.pop_front();
+                                }
+                                false
+                            }
+                            None => true,
+                        };
+                    }
+
+                    if despawn {
+                        let _ = world.despawn(boss.0);
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub fn update_cooldown_attack(attack: &mut AttackMove, d: f32) {
@@ -98,9 +334,10 @@ fn handle_fire_bullet(
     world: &mut World,
     id: &Entity,
     attack_move: &AttackMove,
-    transform: &Transform2D,
-    player: &Transform2D,
+    transform: Complex<f32>,
+    player: Complex<f32>,
     d: &RaylibDrawHandle,
+    state: &mut State,
 ) {
     match attack_move {
         AttackMove::AtPlayer {
@@ -117,35 +354,35 @@ fn handle_fire_bullet(
 
             if *num > 1 {
                 for i in 0..*num as i32 {
-                    let rand_x = d.get_random_value::<i32>(1..100) as f32 / 1000.;
-                    let rand_y = d.get_random_value::<i32>(1..100) as f32 / 1000.;
+                    let rand_x = d.get_random_value::<i32>(1..100) as f32 / 10000.;
+                    let rand_y = d.get_random_value::<i32>(1..100) as f32 / 10000.;
                     let angle = (i - 1) as f32 * spread;
-                    let dir =
-                        transform.position.dir(player.position()) * Complex::cdir(angle) * speed
-                            + cmpx!(rand_x, rand_y);
+                    let dir = transform.dir(&player) * Complex::cdir(angle) * speed
+                        + cmpx!(rand_x, rand_y);
                     let move_params = MoveParams::move_linear(dir);
                     let transform = Transform2D {
                         rotation: dir.rot(),
                         scale: vec2!(0.05),
-                        ..*transform
+                        position: transform,
                     };
+                    state.audio.shot1.play(state.sfx_volume);
                     create_enemy_bullet(world, transform, setup.0.clone(), move_params, setup.1);
                 }
                 return;
             }
 
-            let dir = transform.position.dir(player.position()) * speed;
-            println!("{}", dir.rot());
+            let dir = transform.dir(&player) * speed;
             let move_params = MoveParams::move_linear(dir);
             let transform = Transform2D {
                 scale: vec2!(1.),
                 rotation: dir.rot(),
-                ..*transform
+                position: transform,
             };
+            state.audio.shot1.play(state.sfx_volume);
             create_enemy_bullet(world, transform, setup.0.clone(), move_params, setup.1);
         }
         AttackMove::Multiple(moves) => moves.iter().for_each(|attack_move| {
-            handle_fire_bullet(world, id, attack_move, transform, player, d)
+            handle_fire_bullet(world, id, attack_move, transform, player, d, state)
         }),
         AttackMove::Circle {
             sides,
@@ -164,8 +401,9 @@ fn handle_fire_bullet(
                 let transform = Transform2D {
                     scale: vec2!(1.),
                     rotation: dir.rot(),
-                    ..*transform
+                    position: transform,
                 };
+                state.audio.shot1.play(state.sfx_volume);
                 create_enemy_bullet(world, transform, setup.0.clone(), move_params, setup.1);
             }
         }
@@ -219,7 +457,7 @@ pub fn draw_focus(
                 d.draw_texture_pro(
                     &state.assets.get("commons_sprite"),
                     get_sprite_coord(0, 0, 32., 32.),
-                    Rectangle::new(t.position().re + 15., t.position().im + 15., 32., 32.),
+                    Rectangle::new(t.position().re, t.position().im, 32., 32.),
                     Vector2::new(16., 16.),
                     f.0,
                     Color::WHITE,
@@ -244,7 +482,7 @@ pub fn delete_offscreen(world: &mut World) {
         })
         .collect::<Vec<_>>();
 
-    let container = Rectangle::new(-40., -40., 400., 488.);
+    let container = Rectangle::new(-40., -40., 460., 488.);
     for i in pending {
         if container.check_collision_point_rec(i.1.position.to_vec2()) {
             let _ = world.insert_one(i.0, BeenOnScreen(true));
@@ -267,7 +505,7 @@ pub fn draw_boss_bg(
             d.draw_texture_pro(
                 &state.assets.get("commons_sprite"),
                 get_sprite_coord(0, 6, 64., 64.),
-                Rectangle::new(t.position().re + 16., t.position().im + 32., 64., 64.),
+                Rectangle::new(t.position().re, t.position().im, 64., 64.),
                 Vector2::new(32., 32.),
                 b.0,
                 Color::WHITE,
@@ -318,8 +556,8 @@ pub fn wanderable_search(world: &World, d: &RaylibDrawHandle<'_>) {
         });
 }
 
-pub fn player_control(world: &mut World, state: &mut State, d: &RaylibDrawHandle<'_>) {
-    let mut pending = Vec::new();
+pub fn player_control<'a>(world: &mut World, state: &mut State<'a>, d: &RaylibDrawHandle<'_>) {
+    let mut pending: Vec<Box<dyn FnOnce(&mut World, &mut State<'a>)>> = Vec::new();
 
     world
         .query::<(
@@ -358,7 +596,13 @@ pub fn player_control(world: &mut World, state: &mut State, d: &RaylibDrawHandle
 
             if state.controls.is_down(Action::Attack, d) {
                 a.basic.0 .0.update(d.get_frame_time());
-                pending.push(a.basic.1.spawn(*t.position()));
+                let action = a.basic.1.spawn(*t.position());
+                pending.push(Box::new(action));
+            }
+
+            if state.controls.is_pressed(Action::Spell, d) {
+                let action = a.spells.1.spawn(*t.position());
+                pending.push(Box::new(action));
             }
         });
 

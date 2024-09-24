@@ -78,7 +78,9 @@ impl Scene for CharacterSelection {
             }
         }
 
-        if state.controls.is_pressed(Action::Accept, d) {
+        if state.controls.is_pressed(Action::Accept, d)
+            || state.controls.is_pressed(Action::Attack, d)
+        {
             match self.current_menu {
                 CurrentSelection::Difficulty => {
                     if self.difficulty_selected == 1 {
@@ -153,7 +155,7 @@ impl Scene for CharacterSelection {
     }
 
     fn draw(
-        &self,
+        &mut self,
         d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         state: &State,
     ) {

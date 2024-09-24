@@ -28,6 +28,10 @@ impl Timer {
         self.previously_completed = false;
     }
 
+    pub fn elapsed(&self) -> f32 {
+        self.remaining_time
+    }
+
     pub fn update(&mut self, d: f32) {
         if self.paused {
             return;

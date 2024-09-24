@@ -4,14 +4,15 @@ use hecs::World;
 use raylib::prelude::*;
 
 use crate::{
-    components::{Transform2D, Wanderable},
     controls::Action,
     event::EventManager,
+    stage::stage1,
     systems::{
-        delete_offscreen, draw_boss_bg, draw_circle_hitbox, draw_focus, draw_sprites_system,
-        player_control, rotate_focus, update_boss_attack, update_movement, wanderable_search,
+        delete_offscreen, draw_boss_bg, draw_boss_hp, draw_circle_hitbox, draw_focus,
+        draw_sprites_system, invulnerable_delay_update, player_control, rotate_focus,
+        update_boss_attack, update_collision, update_movement, wanderable_search,
     },
-    ui::basic_choice::BasicChoice,
+    ui::{basic_choice::BasicChoice, dialog::Dialog},
     utility::get_sprite_coord,
 };
 
@@ -20,6 +21,7 @@ use super::{main_menu::MainMenu, Scene};
 #[derive(Debug, PartialEq)]
 enum GameState {
     Paused,
+    Dialog,
     Resumed,
 }
 
@@ -36,6 +38,7 @@ pub struct StageView {
     choices: [BasicChoice; 3],
 
     event: Option<EventManager>,
+    pub dialog: Option<Dialog>,
 }
 
 impl Debug for StageView {
@@ -64,6 +67,7 @@ impl StageView {
             bg_movement,
             state,
             event: Some(event),
+            dialog: None,
 
             current_index: 0,
             choices: [
@@ -72,6 +76,11 @@ impl StageView {
                 BasicChoice::new("Exit", false),
             ],
         }
+    }
+
+    pub fn push_dialog(&mut self, dialog: Dialog) {
+        self.dialog = Some(dialog);
+        self.state = GameState::Dialog;
     }
 }
 
@@ -89,6 +98,7 @@ impl Scene for StageView {
             match self.state {
                 GameState::Paused => self.state = GameState::Resumed,
                 GameState::Resumed => self.state = GameState::Paused,
+                GameState::Dialog => {}
             }
         }
 
@@ -107,12 +117,17 @@ impl Scene for StageView {
                     state.audio.select_sfx.play(state.sfx_volume);
                 }
 
-                if state.controls.is_pressed(Action::Accept, d) {
+                if state.controls.is_pressed(Action::Accept, d)
+                    || state.controls.is_pressed(Action::Attack, d)
+                {
                     if self.current_index < 8 {
                         state.audio.select_sfx.play(state.sfx_volume);
                     }
                     match self.current_index {
-                        0 => self.state = GameState::Resumed,
+                        0 if state.score.life > 0 => self.state = GameState::Resumed,
+                        1 => {
+                            state.change_scene(Box::new(StageView::new("stg".to_owned(), stage1())))
+                        }
                         2 => state.change_scene(Box::new(MainMenu::new())),
 
                         _ => {}
@@ -136,12 +151,29 @@ impl Scene for StageView {
                 delete_offscreen(&mut self.world);
                 wanderable_search(&self.world, d);
                 update_boss_attack(&mut self.world, state, d);
+                update_collision(&mut self.world, state);
+                invulnerable_delay_update(&mut self.world, d);
+
+                if state.score.life < 0 {
+                    self.state = GameState::Paused
+                }
+            }
+            GameState::Dialog => {
+                if state.controls.is_pressed(Action::Attack, d) {
+                    let mut di = self.dialog.take().unwrap();
+                    di.next();
+                    if di.done() {
+                        self.state = GameState::Resumed;
+                        return;
+                    }
+                    self.dialog = Some(di);
+                }
             }
         }
     }
 
     fn draw(
-        &self,
+        &mut self,
         d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         state: &crate::state::State,
     ) {
@@ -375,6 +407,12 @@ impl Scene for StageView {
                 }
             }
             GameState::Resumed => {}
+            GameState::Dialog => {
+                d.draw_rectangle(0, 0, 640, 480, Color::new(0, 0, 0, 128));
+                let di = self.dialog.take().unwrap();
+                di.draw(state, d);
+                self.dialog = Some(di);
+            }
         }
     }
 
@@ -398,6 +436,7 @@ impl Scene for StageView {
             draw_sprites_system(&self.world, state, &mut md);
             draw_focus(&self.world, state, &mut md);
             // draw_circle_hitbox(&self.world, &mut md);
+            draw_boss_hp(&self.world, state, &mut md);
             // self.world.query::<&Wanderable>().iter().for_each(|(_, w)| {
             //     if let Some(tgt) = w.target_pos {
             //         md.draw_rectangle(tgt.re as i32 - 32, tgt.im as i32 - 32, 32, 32, Color::RED);

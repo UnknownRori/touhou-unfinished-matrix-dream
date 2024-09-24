@@ -38,7 +38,7 @@ impl Scene for MainMenu {
     }
 
     fn draw(
-        &self,
+        &mut self,
         d: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         state: &crate::state::State,
     ) {
@@ -66,6 +66,17 @@ impl Scene for MainMenu {
             28.,
             0.,
             Color::WHITE,
+        );
+
+        d.draw_text_pro(
+            &state.assets.font,
+            "0.0",
+            Vector2::new(screen.0 / 2. - width + 220., 160.),
+            Vector2::new(0., 0.),
+            0.,
+            21.,
+            0.,
+            Color::GRAY,
         );
 
         let position = Vector2::new(260., 250.);
@@ -104,7 +115,9 @@ impl Scene for MainMenu {
             state.audio.select_sfx.play(state.sfx_volume);
         }
 
-        if state.controls.is_pressed(Action::Accept, d) {
+        if state.controls.is_pressed(Action::Accept, d)
+            || state.controls.is_pressed(Action::Attack, d)
+        {
             if self.current_index < 8 {
                 state.audio.select_sfx.play(state.sfx_volume);
             }

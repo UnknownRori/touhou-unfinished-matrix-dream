@@ -19,7 +19,7 @@ pub struct Enemy;
 pub struct Boss;
 pub struct Bullet;
 pub struct DieOffScreen;
-pub struct Damage(f32);
+pub struct Damage(pub f32);
 
 #[derive(Debug, Clone)]
 pub struct BeenOnScreen(pub bool);
@@ -28,6 +28,7 @@ pub struct Cooldown(pub Timer);
 
 pub struct Focusable(pub f32, pub f32);
 pub struct RotatingBgBoss(pub f32, pub f32);
+pub struct InvulnerableDelay(pub f32);
 
 impl Cooldown {
     pub fn new(time: f32) -> Self {
@@ -118,6 +119,118 @@ impl BossMove {
             }
         }
     }
+
+    pub fn get_time(&self) -> i32 {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => timeout.elapsed() as i32,
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => timeout.elapsed() as i32,
+        }
+    }
+
+    pub fn is_timeout(&self) -> bool {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => timeout.completed(),
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => timeout.completed(),
+        }
+    }
+
+    pub fn damage(&mut self, val: f32) -> bool {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => hp.damage(val),
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => hp.damage(val),
+        }
+    }
+
+    pub fn get_cur_hp(&self) -> f32 {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => hp.hp,
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => hp.hp,
+        }
+    }
+
+    pub fn get_max_hp(&self) -> f32 {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => hp.max_hp,
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => hp.max_hp,
+        }
+    }
+
+    pub fn is_dead(&self) -> bool {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => hp.is_dead(),
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => hp.is_dead(),
+        }
+    }
+
+    pub fn get_hp(&self) -> Hitpoint {
+        match self {
+            BossMove::Spells {
+                name,
+                timeout,
+                hp,
+                attack,
+            } => *hp,
+            BossMove::NonSpells {
+                timeout,
+                hp,
+                attack,
+            } => *hp,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -130,6 +243,7 @@ pub enum BasicPlayerAttack {
 impl BasicPlayerAttack {
     pub fn spawn(&self, pos: Complex<f32>) -> impl FnOnce(&mut World, &mut State) {
         move |world, state| {
+            state.audio.generic_shoot.play(state.sfx_volume);
             world.spawn((
                 Player,
                 Bullet,
@@ -141,8 +255,8 @@ impl BasicPlayerAttack {
                 },
                 Damage(10.),
                 Sprite::new("reimu_sprite", 0, 4, 32., 32.),
-                MoveParams::move_linear(cmpx!(0., -5000.)),
-                CircleHitbox::new(2., vec2!(16.)),
+                MoveParams::move_linear(cmpx!(0., -2000.)),
+                CircleHitbox::new(2., vec2!(0.)),
             ));
         }
     }
@@ -150,6 +264,25 @@ impl BasicPlayerAttack {
 
 pub enum PlayerSpells {
     ReimuA,
+}
+
+impl PlayerSpells {
+    pub fn spawn(&self, pos: Complex<f32>) -> impl FnOnce(&mut World, &mut State) {
+        move |world, state| {
+            if state.score.spell > 0 {
+                state.score.spell -= 1;
+            }
+            let pendings = world
+                .query::<(&Enemy, &Bullet)>()
+                .iter()
+                .map(|(id, _)| id.clone())
+                .collect::<Vec<Entity>>();
+
+            for i in pendings {
+                let _ = world.despawn(i);
+            }
+        }
+    }
 }
 
 pub struct Attack<T: Send + Sync>(pub Cooldown, pub T);

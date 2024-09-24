@@ -20,6 +20,10 @@ pub struct AudioAssets<'a> {
 
     // INFO : SFX
     pub select_sfx: Sfx<'a>,
+    pub death_sfx: Sfx<'a>,
+    pub generic_shoot: Sfx<'a>,
+    pub shot1: Sfx<'a>,
+    pub spell_end: Sfx<'a>,
 }
 
 impl<'a> AudioAssets<'a> {
@@ -127,10 +131,18 @@ impl<'a> AudioAssets<'a> {
         ));
 
         let select_sfx = Sfx::new("./assets/sfx/select.ogg", audio);
+        let death_sfx = Sfx::new("./assets/sfx/death.ogg", audio);
+        let shot1 = Sfx::new("./assets/sfx/shot1.ogg", audio);
+        let generic_shoot = Sfx::new("./assets/sfx/generic_shoot.ogg", audio);
+        let spell_end = Sfx::new("./assets/sfx/spell_end.ogg", audio);
 
         Self {
             select_sfx,
+            death_sfx,
             bgm,
+            generic_shoot,
+            shot1,
+            spell_end,
             current_played_bgm: None,
         }
     }

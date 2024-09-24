@@ -79,7 +79,7 @@ impl<'a> State<'a> {
     ) {
         d.clear_background(Color::BLACK);
         if self.current_scene.is_some() {
-            let scene = self.current_scene.take().unwrap();
+            let mut scene = self.current_scene.take().unwrap();
             scene.draw(d, self);
             self.current_scene = Some(scene);
         }

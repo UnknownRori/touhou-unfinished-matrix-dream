@@ -1,6 +1,6 @@
 use assets::AudioAssets;
 use raylib::prelude::*;
-use scenes::main_menu::MainMenu;
+use scenes::{instruction::Instruction, main_menu::MainMenu};
 use state::State;
 
 pub mod assets;
@@ -41,7 +41,7 @@ impl<'a> Game<'a> {
 
         let audio_asset = AudioAssets::new(audio);
         let mut state = State::new(&mut rl, &thread, audio_asset);
-        state.change_scene(Box::new(MainMenu::new()));
+        state.change_scene(Box::new(Instruction));
 
         let render = rl.load_render_texture(&thread, 640, 480).unwrap();
         render.set_texture_filter(&thread, TextureFilter::TEXTURE_FILTER_POINT);

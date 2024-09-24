@@ -5,6 +5,7 @@ use raylib::prelude::*;
 use crate::state::State;
 
 pub mod character_selection;
+pub mod instruction;
 pub mod main_menu;
 pub mod music_room;
 pub mod stage_view;
@@ -15,7 +16,7 @@ pub trait Scene: Debug {
     fn update(&mut self, _: &mut RaylibDrawHandle, _: &mut State);
     // Draw entire screen
     fn draw(
-        &self,
+        &mut self,
         _: &mut RaylibBlendMode<'_, RaylibTextureMode<'_, RaylibDrawHandle<'_>>>,
         _: &State,
     );
