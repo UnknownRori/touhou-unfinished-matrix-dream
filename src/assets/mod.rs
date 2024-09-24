@@ -13,6 +13,8 @@ pub struct Assets {
 }
 
 pub struct AudioAssets<'a> {
+    pub current_played_bgm: Option<usize>,
+
     // INFO : BGM
     pub bgm: Vec<BGM<'a>>,
 
@@ -126,7 +128,31 @@ impl<'a> AudioAssets<'a> {
 
         let select_sfx = Sfx::new("./assets/sfx/select.ogg", audio);
 
-        Self { select_sfx, bgm }
+        Self {
+            select_sfx,
+            bgm,
+            current_played_bgm: None,
+        }
+    }
+
+    pub fn play_bgm(&mut self, id: usize, vol: f32) {
+        self.stop_bgm();
+        self.current_played_bgm = Some(id);
+        self.bgm[id].play_stream(vol);
+    }
+
+    pub fn update_bgm(&mut self) {
+        if let Some(id) = self.current_played_bgm {
+            self.bgm[id].update_stream();
+        }
+    }
+
+    pub fn stop_bgm(&mut self) {
+        if let Some(old) = self.current_played_bgm {
+            self.bgm[old].stop_stream();
+            self.bgm[old].bgm.seek_stream(0.);
+        }
+        self.current_played_bgm = None;
     }
 }
 

@@ -34,7 +34,7 @@ impl Scene for MusicRoom {
     }
 
     fn clean_up(&mut self, state: &mut crate::state::State) {
-        state.audio.bgm[self.current_music].stop_stream();
+        state.audio.stop_bgm();
     }
 
     fn update(
@@ -42,7 +42,7 @@ impl Scene for MusicRoom {
         d: &mut raylib::prelude::RaylibDrawHandle,
         state: &mut crate::state::State,
     ) {
-        state.audio.bgm[self.current_music].update_stream();
+        state.audio.update_bgm();
 
         if state.controls.is_pressed(Action::Escape, d) {
             state.change_scene(Box::new(MainMenu::new()));
@@ -60,10 +60,8 @@ impl Scene for MusicRoom {
         }
 
         if state.controls.is_pressed(Action::Accept, d) {
-            state.audio.bgm[self.current_music].stop_stream();
-
             self.current_music = self.selection_index;
-            state.audio.bgm[self.current_music].play_stream(state.bgm_volume);
+            state.audio.play_bgm(self.current_music, state.bgm_volume);
         }
     }
 

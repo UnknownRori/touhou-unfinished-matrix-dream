@@ -30,11 +30,11 @@ impl MainMenu {
 
 impl Scene for MainMenu {
     fn init(&mut self, state: &mut crate::state::State) {
-        state.audio.bgm[0].play_stream(state.bgm_volume);
+        state.audio.play_bgm(0, state.bgm_volume);
     }
 
     fn clean_up(&mut self, state: &mut crate::state::State) {
-        state.audio.bgm[0].stop_stream();
+        state.audio.stop_bgm();
     }
 
     fn draw(
@@ -89,7 +89,7 @@ impl Scene for MainMenu {
     }
 
     fn update(&mut self, d: &mut RaylibDrawHandle, state: &mut crate::state::State) {
-        state.audio.bgm[0].update_stream();
+        state.audio.update_bgm();
 
         if state.controls.is_pressed(Action::Down, d) {
             self.current_index = (self.current_index + 1) % self.choices.len() as usize;
