@@ -3,9 +3,9 @@ use std::fmt::Debug;
 use hecs::World;
 use raylib::prelude::*;
 
-use crate::{controls::Action, utility::get_sprite_coord};
+use crate::{controls::Action, ui::basic_choice::BasicChoice, utility::get_sprite_coord};
 
-use super::Scene;
+use super::{main_menu::MainMenu, Scene};
 
 #[derive(Debug, PartialEq)]
 enum GameState {
@@ -21,6 +21,9 @@ pub struct StageView {
     bg_pos: Vector2,
     bg_movement: Vector2,
     state: GameState,
+
+    current_index: usize,
+    choices: [BasicChoice; 3],
 }
 
 impl Debug for StageView {
@@ -48,6 +51,13 @@ impl StageView {
             bg_pos,
             bg_movement,
             state,
+
+            current_index: 0,
+            choices: [
+                BasicChoice::new("Continue", false),
+                BasicChoice::new("Restart", false),
+                BasicChoice::new("Exit", false),
+            ],
         }
     }
 }
@@ -71,7 +81,30 @@ impl Scene for StageView {
 
         match self.state {
             GameState::Paused => {
-                // TODO : Fill this with pause control
+                if state.controls.is_pressed(Action::Down, d) {
+                    self.current_index = (self.current_index + 1) % self.choices.len() as usize;
+                    state.audio.select_sfx.play(state.sfx_volume);
+                }
+
+                if state.controls.is_pressed(Action::Up, d) {
+                    if self.current_index == 0 {
+                        self.current_index = self.choices.len() as usize;
+                    }
+                    self.current_index -= 1;
+                    state.audio.select_sfx.play(state.sfx_volume);
+                }
+
+                if state.controls.is_pressed(Action::Accept, d) {
+                    if self.current_index < 8 {
+                        state.audio.select_sfx.play(state.sfx_volume);
+                    }
+                    match self.current_index {
+                        0 => self.state = GameState::Resumed,
+                        2 => state.change_scene(Box::new(MainMenu::new())),
+
+                        _ => {}
+                    }
+                }
             }
             GameState::Resumed => {
                 self.bg_pos += self.bg_movement * d.get_frame_time();
@@ -296,6 +329,28 @@ impl Scene for StageView {
             0.5,
             Color::WHITE,
         );
+
+        match self.state {
+            GameState::Paused => {
+                let position = Vector2::new(70., 250.);
+                let font_size = 21.;
+                d.draw_text_pro(
+                    &state.assets.font,
+                    "Game Paused",
+                    Vector2::new(position.x, position.y - 32.),
+                    Vector2::new(0., 0.),
+                    0.,
+                    28.,
+                    0.,
+                    Color::WHITE,
+                );
+                for (i, val) in self.choices.iter().enumerate() {
+                    let position = Vector2::new(position.x, position.y + font_size * i as f32);
+                    val.draw(d, i == self.current_index, position, font_size, state);
+                }
+            }
+            GameState::Resumed => {}
+        }
     }
 
     fn draw_stage(
