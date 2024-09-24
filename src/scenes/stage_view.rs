@@ -159,6 +159,7 @@ impl Scene for StageView {
                 }
             }
             GameState::Dialog => {
+                state.audio.update_bgm();
                 if state.controls.is_pressed(Action::Attack, d) {
                     let mut di = self.dialog.take().unwrap();
                     di.next();
