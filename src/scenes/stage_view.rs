@@ -4,7 +4,14 @@ use hecs::World;
 use raylib::prelude::*;
 
 use crate::{
-    controls::Action, event::EventManager, ui::basic_choice::BasicChoice, utility::get_sprite_coord,
+    controls::Action,
+    event::EventManager,
+    systems::{
+        delete_offscreen, draw_circle_hitbox, draw_focus, draw_sprites_system, player_control,
+        rotate_focus, update_movement,
+    },
+    ui::basic_choice::BasicChoice,
+    utility::get_sprite_coord,
 };
 
 use super::{main_menu::MainMenu, Scene};
@@ -121,6 +128,11 @@ impl Scene for StageView {
                 let mut event = self.event.take().unwrap();
                 event.update(self, state, d.get_frame_time());
                 self.event = Some(event);
+
+                player_control(&mut self.world, state, d);
+                update_movement(&self.world, d);
+                rotate_focus(&self.world, d);
+                delete_offscreen(&mut self.world);
             }
         }
     }
@@ -376,6 +388,12 @@ impl Scene for StageView {
                 Vector2::new(0., self.bg_pos.y - 448. * i as f32),
                 Color::WHITE,
             );
+        }
+
+        {
+            draw_sprites_system(&self.world, state, &mut md);
+            draw_focus(&self.world, state, &mut md);
+            draw_circle_hitbox(&self.world, &mut md);
         }
 
         if self.state == GameState::Paused {

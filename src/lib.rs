@@ -7,6 +7,7 @@ pub mod assets;
 pub mod components;
 pub mod controls;
 pub mod difficulty;
+pub mod entity;
 pub mod event;
 pub mod math;
 pub mod renderer;

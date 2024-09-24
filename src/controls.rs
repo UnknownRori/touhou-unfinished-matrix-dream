@@ -59,4 +59,11 @@ impl Controls {
             Combination::Double(key, key2) => d.is_key_pressed(*key) && d.is_key_pressed(*key2),
         })
     }
+
+    pub fn is_down(&self, action: Action, d: &RaylibDrawHandle) -> bool {
+        self.0.get(&action).map_or(false, |a| match a {
+            Combination::Single(key) => d.is_key_down(*key),
+            Combination::Double(key, key2) => d.is_key_down(*key) && d.is_key_down(*key2),
+        })
+    }
 }

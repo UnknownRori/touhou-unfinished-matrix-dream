@@ -28,7 +28,7 @@ impl Timer {
         self.previously_completed = false;
     }
 
-    pub fn update(&mut self, d: &mut RaylibTextureMode<'_, RaylibDrawHandle<'_>>) {
+    pub fn update(&mut self, d: f32) {
         if self.paused {
             return;
         }
@@ -39,7 +39,7 @@ impl Timer {
         if !self.repeating {
             self.completed = false;
         }
-        self.remaining_time -= d.get_frame_time();
+        self.remaining_time -= d;
         if self.remaining_time <= 0. {
             self.completed = true;
         }

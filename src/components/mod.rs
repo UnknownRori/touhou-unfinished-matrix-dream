@@ -1,9 +1,13 @@
+use hecs::World;
 use num_complex::Complex;
 use raylib::prelude::*;
 
 use crate::{
+    cmpx,
     math::ToVec2,
+    state::State,
     utility::{get_sprite_coord, timer::Timer},
+    vec2,
 };
 
 pub struct Player;
@@ -18,15 +22,88 @@ pub struct BeenOnScreen(pub bool);
 #[derive(Debug, Clone)]
 pub struct Cooldown(pub Timer);
 
+pub struct Focusable(pub f32, pub f32);
+
 impl Cooldown {
     pub fn new(time: f32) -> Self {
         Self(Timer::new(time, true))
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct BulletSetup(pub Sprite);
+
+#[derive(Debug, Clone)]
+pub enum AttackMove {
+    AtPlayer {
+        num: u16,
+        speed: f32,
+        spread: f32,
+        total_shoot: u16,
+        cooldown: Cooldown,
+        setup: BulletSetup,
+    },
+    Circle {
+        sides: u16,
+        rotation_per_fire: f32,
+        rotation: f32,
+        cooldown: Cooldown,
+        setup: BulletSetup,
+    },
+    Multiple(Vec<AttackMove>),
+}
+
+pub enum BasicPlayerAttack {
+    ReimuA,
+}
+
+impl BasicPlayerAttack {
+    pub fn spawn(&self, pos: Complex<f32>) -> impl FnOnce(&mut World, &mut State) {
+        move |world, state| {
+            world.spawn((
+                Player,
+                Bullet,
+                DieOffScreen,
+                Transform2D {
+                    position: pos,
+                    scale: vec2!(1.),
+                    rotation: 0.,
+                },
+                Sprite::new("reimu_sprite", 0, 4, 32., 32.),
+                MoveParams::move_linear(cmpx!(0., -5000.)),
+                CircleHitbox::new(2., vec2!(16.)),
+            ));
+        }
+    }
+}
+
+pub enum PlayerSpells {
+    ReimuA,
+}
+
+pub struct Attack<T: Send + Sync>(pub Cooldown, pub T);
+
+impl<T: Send + Sync> Attack<T> {
+    pub fn new(cooldown: Cooldown, t: T) -> Self {
+        Self(cooldown, t)
+    }
+}
+
+pub struct PlayerAttack {
+    pub basic: Attack<BasicPlayerAttack>,
+    pub spells: Attack<PlayerSpells>,
+}
+
+impl PlayerAttack {
+    pub fn new(basic: Attack<BasicPlayerAttack>, spells: Attack<PlayerSpells>) -> Self {
+        Self { basic, spells }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Sprite {
-    name: &'static str,
-    src: Rectangle,
+    pub name: &'static str,
+    pub src: Rectangle,
 }
 
 impl Sprite {
@@ -226,11 +303,12 @@ impl Transform2D {
 #[derive(Debug, Clone, Copy)]
 pub struct CircleHitbox {
     pub radius: f32,
+    pub offset: Vector2,
 }
 
 impl CircleHitbox {
-    pub fn new(radius: f32) -> Self {
-        Self { radius }
+    pub fn new(radius: f32, offset: Vector2) -> Self {
+        Self { radius, offset }
     }
 
     pub fn is_intersect(
@@ -239,10 +317,15 @@ impl CircleHitbox {
         target_pos: &Transform2D,
         target_hitbox: &Self,
     ) -> bool {
+        let self_pos = current_pos.position.to_vec2();
+        let tgt_pos = target_pos.position.to_vec2();
         check_collision_circles(
-            current_pos.position.to_vec2(),
+            Vector2::new(self_pos.x + self.offset.x, self_pos.y + self.offset.y),
             self.radius,
-            target_pos.position.to_vec2(),
+            Vector2::new(
+                tgt_pos.x + target_hitbox.offset.x,
+                tgt_pos.y + target_hitbox.offset.y,
+            ),
             target_hitbox.radius,
         )
     }

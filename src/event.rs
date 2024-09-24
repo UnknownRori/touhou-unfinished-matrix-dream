@@ -22,7 +22,6 @@ impl EventManager {
     }
     pub fn update(&mut self, stage: &mut StageView, state: &mut State, time: f32) {
         self.timer += time;
-        println!("{}", self.timer);
         self.lists
             .iter_mut()
             .filter(|event| !event.is_spawned && event.start < self.timer)
