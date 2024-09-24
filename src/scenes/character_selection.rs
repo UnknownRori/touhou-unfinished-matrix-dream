@@ -1,5 +1,7 @@
 use crate::{
     controls::Action,
+    difficulty::Difficulty,
+    score::ScoreData,
     state::State,
     ui::character_selection::{Character, DifficultyChoice, ShotType},
 };
@@ -83,7 +85,10 @@ impl Scene for CharacterSelection {
                     }
                 }
                 CurrentSelection::Character => {
-                    state.change_scene(Box::new(StageView::new("stg1".to_owned())));
+                    if self.character_select[0] == 0 && self.character_select[1] == 0 {
+                        state.score = ScoreData::new(Difficulty::Normal);
+                        state.change_scene(Box::new(StageView::new("stg1".to_owned())));
+                    }
                 }
             }
         }

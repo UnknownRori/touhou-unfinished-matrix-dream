@@ -9,6 +9,9 @@ pub struct StageView {
     world: World,
     camera: Camera2D,
     bg: String,
+
+    bg_pos: Vector2,
+    bg_movement: Vector2,
 }
 
 impl Debug for StageView {
@@ -26,7 +29,15 @@ impl StageView {
             rotation: 0.0,
             zoom: 1.0,
         };
-        Self { world, bg, camera }
+        let bg_pos = Vector2::new(0., 0.);
+        let bg_movement = Vector2::new(0., 100.);
+        Self {
+            world,
+            bg,
+            camera,
+            bg_pos,
+            bg_movement,
+        }
     }
 }
 
@@ -35,7 +46,12 @@ impl Scene for StageView {
         //
     }
 
-    fn update(&mut self, _: &mut raylib::prelude::RaylibDrawHandle, _: &mut crate::state::State) {}
+    fn update(&mut self, d: &mut raylib::prelude::RaylibDrawHandle, _: &mut crate::state::State) {
+        self.bg_pos += self.bg_movement * d.get_frame_time();
+        if self.bg_pos.y >= 448. {
+            self.bg_pos.y = 0.;
+        }
+    }
 
     fn draw(
         &self,
@@ -51,7 +67,14 @@ impl Scene for StageView {
         state: &crate::state::State,
     ) {
         let mut md = d.begin_mode2D(self.camera);
-        md.draw_texture(&state.assets.get(&self.bg), 0, 0, Color::WHITE);
+
+        for i in 0..2 {
+            md.draw_texture_v(
+                &state.assets.get(&self.bg),
+                Vector2::new(0., self.bg_pos.y - 448. * i as f32),
+                Color::WHITE,
+            );
+        }
     }
 
     fn init(&mut self, _: &mut crate::state::State) {

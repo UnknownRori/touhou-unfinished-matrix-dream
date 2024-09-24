@@ -1,4 +1,4 @@
-use crate::difficulty::Difficulty;
+use crate::difficulty::{self, Difficulty};
 
 #[derive(Debug)]
 pub struct ScoreData {
@@ -21,6 +21,20 @@ impl Default for ScoreData {
             life: 3,
             spell: 3,
             difficulty: Difficulty::Normal,
+        }
+    }
+}
+
+impl ScoreData {
+    pub fn new(difficulty: Difficulty) -> Self {
+        Self {
+            graze: 0,
+            score: 0,
+            power: 1.0,
+            value: 10000,
+            life: 3,
+            spell: 3,
+            difficulty,
         }
     }
 }

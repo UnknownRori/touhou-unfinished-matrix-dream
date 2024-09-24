@@ -140,7 +140,7 @@ impl Assets {
 
         assets.load_textures(rl, thread, "./assets/ui/main-menu.png", "main_menu");
         assets.load_textures(rl, thread, "./assets/ui/stage-view.png", "stage_view");
-        assets.load_textures(rl, thread, "./assets/backgrounds/stage1/bg.png", "stg1");
+        assets.load_textures_wrap(rl, thread, "./assets/backgrounds/stage1/bg.png", "stg1");
 
         assets.load_textures(rl, thread, "./assets/characters/filler.png", "dummy_char");
         assets.load_textures(
@@ -171,6 +171,19 @@ impl Assets {
 
     pub fn get(&self, name: &str) -> &Texture2D {
         self.textures.get(name).unwrap()
+    }
+
+    pub fn load_textures_wrap(
+        &mut self,
+        rl: &mut RaylibHandle,
+        thread: &RaylibThread,
+        path: &str,
+        name: &'static str,
+    ) {
+        let tex = rl.load_texture(thread, path).expect("[-] File not found!");
+        tex.set_texture_wrap(thread, TextureWrap::TEXTURE_WRAP_MIRROR_CLAMP);
+        tex.set_texture_filter(thread, TextureFilter::TEXTURE_FILTER_POINT);
+        self.textures.insert(name, tex);
     }
 
     pub fn load_textures(
