@@ -65,7 +65,7 @@ pub fn miko(world: &mut World) {
         BossMoves(VecDeque::from([
             BossMove::NonSpells {
                 timeout: Timer::new(120., false),
-                hp: Hitpoint::new(25000.),
+                hp: Hitpoint::new(15000.),
                 attack: AttackMove::Multiple(Vec::from([
                     AttackMove::Circle {
                         sides: 32,
@@ -116,7 +116,7 @@ pub fn miko(world: &mut World) {
             BossMove::Spells {
                 name: "Hermit Sign 'Taoist of the Land of the Rising Sun'".to_owned(),
                 timeout: Timer::new(240., false),
-                hp: Hitpoint::new(50000.),
+                hp: Hitpoint::new(30000.),
                 attack: AttackMove::Multiple(
                     [
                         AttackMove::Circle {

@@ -5,7 +5,9 @@ use raylib::prelude::*;
 
 use crate::{
     controls::Action,
+    difficulty::Difficulty,
     event::EventManager,
+    score::ScoreData,
     stage::stage1,
     systems::{
         delete_offscreen, draw_boss_bg, draw_boss_hp, draw_circle_hitbox, draw_focus,
@@ -126,7 +128,9 @@ impl Scene for StageView {
                     match self.current_index {
                         0 if state.score.life > 0 => self.state = GameState::Resumed,
                         1 => {
-                            state.change_scene(Box::new(StageView::new("stg".to_owned(), stage1())))
+                            state.score = ScoreData::new(Difficulty::Normal);
+                            state
+                                .change_scene(Box::new(StageView::new("stg1".to_owned(), stage1())))
                         }
                         2 => state.change_scene(Box::new(MainMenu::new())),
 
